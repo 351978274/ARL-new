@@ -1,0 +1,58 @@
+# ARL 现代化重写 - Python 3.13.7 依赖
+# Web 框架
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.12
+
+# 异步 MongoDB 驱动
+motor>=3.6.0
+
+# HTTP 客户端（异步）
+httpx[http2]>=0.27.0
+
+# DNS 解析（异步）
+dnspython>=2.7.0
+
+# 域名 TLD 解析
+tld>=0.13.0
+
+# 配置与数据校验
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+PyYAML>=6.0.2
+
+# 任务调度
+APScheduler>=3.10.4
+
+# 端口扫描
+python-nmap>=0.7.1
+
+# GeoIP
+geoip2>=4.8.0
+
+# SSL 证书解析
+pyOpenSSL>=24.3.0
+
+# 指纹 hash
+mmh3>=5.0.1
+
+# HTML 解析（指纹/爬虫）
+pyquery>=2.0.1
+lxml>=5.3.0
+
+# Excel 导出
+openpyxl>=3.1.5
+
+# 系统信息
+psutil>=6.1.0
+
+# cron 表达式
+croniter>=3.0.3
+
+# 日志
+loguru>=0.7.2
+colorlog>=6.9.0
+
+# 测试
+pytest>=8.3.0
+pytest-asyncio>=0.24.0

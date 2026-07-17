@@ -1,0 +1,86 @@
+/* 全局样式：还原 ARL 深色侧边栏 + 浅色主区 配色 */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  background: #f0f2f5;
+  color: #303133;
+}
+
+* { box-sizing: border-box; }
+
+/* 滚动条美化 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #c0c4cc; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #909399; }
+::-webkit-scrollbar-track { background: #f5f7fa; }
+
+/* 状态标签颜色 */
+.status-waiting { color: #e6a23c; }
+.status-running { color: #409eff; }
+.status-done { color: #67c23a; }
+.status-error { color: #f56c6c; }
+.status-stop { color: #909399; }
+
+/* 卡片间距 */
+.page-container { padding: 16px; }
+.filter-bar { margin-bottom: 16px; }
+.table-toolbar { margin-bottom: 12px; display: flex; gap: 8px; }
+
+/* 登录页 */
+.login-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1f2d3d 0%, #2d3a4b 100%);
+}
+.login-card {
+  width: 380px;
+  padding: 40px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #00b8d4;
+  font-size: 24px;
+  font-weight: 700;
+}
+.login-logo .logo-sub { display: block; font-size: 13px; color: #909399; font-weight: 400; margin-top: 4px; }
+
+/* 主布局 */
+.layout-aside {
+  background: #304156;
+  color: #bfcbd9;
+  overflow-x: hidden;
+}
+.layout-aside .el-menu { border-right: none; background: #304156; }
+.layout-aside .el-menu-item, .layout-aside .el-sub-menu__title { color: #bfcbd9; }
+.layout-aside .el-menu-item:hover, .layout-aside .el-sub-menu__title:hover { background: #263445; }
+.layout-aside .el-menu-item.is-active { background: #00b8d4; color: #fff; }
+.logo-bar {
+  height: 60px; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 16px; font-weight: 700; background: #2b3a4d;
+}
+.logo-bar .logo-icon { color: #00b8d4; margin-right: 8px; font-size: 22px; }
+
+/* 顶栏 */
+.layout-header {
+  background: #fff; border-bottom: 1px solid #e6e6e6;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 60px;
+}
+
+/* 分页右对齐 */
+.pagination-bar { margin-top: 16px; display: flex; justify-content: flex-end; }
+
+/* 指标卡片 */
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.stat-card { background: #fff; border-radius: 6px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.stat-card .stat-title { font-size: 13px; color: #909399; }
+.stat-card .stat-value { font-size: 28px; font-weight: 700; color: #303133; margin-top: 8px; }

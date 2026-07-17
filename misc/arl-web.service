@@ -1,0 +1,32 @@
+# ARL 现代化版 systemd 服务：Web + 任务执行（单进程，含 APScheduler）
+#
+# 安装：
+#   sudo cp misc/arl-web.service /etc/systemd/system/arl-web.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now arl-web
+#
+# 与原版的区别：
+#   - 不再需要 rabbitmq-server / arl-worker / arl-worker-github / arl-scheduler
+#   - 任务执行集成在 Web 进程内（asyncio + APScheduler）
+#   - 仅需 MongoDB + 外部二进制（nmap/nuclei/massdns/wih/phantomjs）
+
+[Unit]
+Description=ARL Web (FastAPI + asyncio + APScheduler)
+After=network.target mongod.service
+Wants=mongod.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ARL
+# 使用项目自带 venv（或系统 python3.13）
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/ARL/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 5018 --workers 1
+Restart=on-failure
+RestartSec=5
+# 日志
+StandardOutput=append:/var/log/arl/web.log
+StandardError=append:/var/log/arl/web.err.log
+
+[Install]
+WantedBy=multi-user.target
