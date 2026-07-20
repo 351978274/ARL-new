@@ -1,7 +1,7 @@
 """数据模型（pydantic），移植自原 app/modules/。
 
 字段结构与原始 _dump_json() 输出保持一致，保证 MongoDB 文档可互通。
-geo_asn/geo_city/ip_type 仍采用惰性计算（通过 utils.ip 模块）。
+geo_asn/geo_city/geo_country/ip_type 仍采用惰性计算（通过 utils.ip_util 模块）。
 """
 from __future__ import annotations
 

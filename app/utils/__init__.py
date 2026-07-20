@@ -36,6 +36,7 @@ from .domain_util import (
 from .ip_util import (
     get_ip_asn,
     get_ip_city,
+    get_ip_country,
     get_ip_type,
     ip_in_scope,
     is_vaild_ip_target,
@@ -123,7 +124,7 @@ __all__ = [
     "check_domain_black", "is_forbidden_domain", "is_in_scope", "is_in_scopes",
     "is_valid_domain", "is_valid_fuzz_domain", "cut_first_name",
     # ip
-    "get_ip_asn", "get_ip_city", "get_ip_type", "ip_in_scope",
+    "get_ip_asn", "get_ip_city", "get_ip_country", "get_ip_type", "ip_in_scope",
     "is_vaild_ip_target", "not_in_black_ips", "transfer_ip_scope",
     # url
     "cut_filename", "get_hostname", "normal_url", "rm_similar_url",

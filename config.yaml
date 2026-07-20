@@ -50,9 +50,11 @@ QUERY_PLUGIN:
     enable: false
 
 # GeoIP 数据库文件配置项
+# 默认指向项目根目录下的 geoip/，绝对/相对路径均可，留空则禁用对应查询
 GEOIP:
-  CITY: '/data/GeoLite2/GeoLite2-City.mmdb'
-  ASN: '/data/GeoLite2/GeoLite2-ASN.mmdb'
+  CITY: 'geoip/GeoLite2-City.mmdb'
+  ASN: 'geoip/GeoLite2-ASN.mmdb'
+  COUNTRY: 'geoip/GeoLite2-Country.mmdb'
 
 # FOFA API 配置项
 FOFA:

@@ -12,7 +12,7 @@ from ..modules import ScanPortType, TaskStatus
 from ..services import (fetch_cert as fetchCert, run_risk_cruising, run_sniffer)
 from ..services.base_update_task import BaseUpdateTask
 from ..services.common_task import CommonTask, WebSiteFetch
-from ..utils import curr_date, get_ip_asn, get_ip_city, get_ip_type, not_in_black_ips
+from ..utils import curr_date, get_ip_asn, get_ip_city, get_ip_country, get_ip_type, not_in_black_ips
 
 logger = get_logger()
 
@@ -93,9 +93,11 @@ class IPTask(CommonTask):
             ip_info["ip_type"] = get_ip_type(curr_ip)
             ip_info["geo_asn"] = {}
             ip_info["geo_city"] = {}
+            ip_info["geo_country"] = {}
             if ip_info["ip_type"] == "PUBLIC":
                 ip_info["geo_asn"] = get_ip_asn(curr_ip)
                 ip_info["geo_city"] = get_ip_city(curr_ip)
+                ip_info["geo_country"] = get_ip_country(curr_ip)
             if self.task_tag == 'task':
                 await conn_db('ip').insert_one(ip_info)
 

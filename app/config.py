@@ -125,6 +125,9 @@ class Settings(BaseModel):
     FILE_LEAK_TOP_2k: str = os.path.join(DICTS_DIR, "file_top_2000.txt")
     FILE_LEAK_TOP_200: str = os.path.join(DICTS_DIR, "file_top_200.txt")
 
+    # GeoIP 数据库默认位于项目根目录下的 geoip/，可通过 config.yaml GEOIP 覆盖
+    GEOIP_DIR: str = os.path.join(ROOT_DIR, "geoip")
+
     # ---- 端口 ----
     TOP_10: str = ScanPortPresets.TOP_10
     TOP_100: str = ScanPortPresets.TOP_100
@@ -145,8 +148,10 @@ class Settings(BaseModel):
     FORBIDDEN_DOMAINS: list[str] = Field(default_factory=list)
 
     # ---- GeoIP ----
-    GEOIP_ASN: str = ""
-    GEOIP_CITY: str = ""
+    # 默认指向项目根目录下的 geoip/ 数据库；缺库时留空，对应查询会被自动禁用
+    GEOIP_ASN: str = os.path.join(ROOT_DIR, "geoip", "GeoLite2-ASN.mmdb")
+    GEOIP_CITY: str = os.path.join(ROOT_DIR, "geoip", "GeoLite2-City.mmdb")
+    GEOIP_COUNTRY: str = os.path.join(ROOT_DIR, "geoip", "GeoLite2-Country.mmdb")
 
     # ---- 域名长度限制 ----
     DOMAIN_MAX_LEN: int = 25
@@ -183,6 +188,20 @@ class Settings(BaseModel):
 
     # ---- 调度 ----
     SCHEDULER_POLL_INTERVAL: int = 58
+
+
+def _resolve_geoip_path(path: str) -> str:
+    """规范化 GeoIP 数据库路径。
+
+    空字符串表示禁用对应查询；相对路径以项目根目录为基准（兼容
+    config.yaml.example 中默认的 'geoip/GeoLite2-*.mmdb' 形式）。
+    存在性不强制，缺失由调用方（utils.ip_util）在运行时优雅降级。
+    """
+    if not path:
+        return ""
+    if os.path.isabs(path):
+        return path
+    return os.path.normpath(os.path.join(ROOT_DIR, path))
 
 
 def _load_yaml() -> dict:
@@ -222,10 +241,11 @@ def _build_settings() -> "Settings":
             if y["FOFA"].get("PAGE_SIZE"):
                 s.FOFA_PAGE_SIZE = int(y["FOFA"]["PAGE_SIZE"])
 
-        # GEOIP
+        # GEOIP：相对路径以项目根目录为基准，留空禁用对应查询
         if "GEOIP" in y:
-            s.GEOIP_CITY = y["GEOIP"].get("CITY", "")
-            s.GEOIP_ASN = y["GEOIP"].get("ASN", "")
+            s.GEOIP_CITY = _resolve_geoip_path(y["GEOIP"].get("CITY", ""))
+            s.GEOIP_ASN = _resolve_geoip_path(y["GEOIP"].get("ASN", ""))
+            s.GEOIP_COUNTRY = _resolve_geoip_path(y["GEOIP"].get("COUNTRY", ""))
 
         # ARL
         if "ARL" in y:

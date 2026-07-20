@@ -1,6 +1,7 @@
 """IP 工具，移植自原 app/utils/ip.py。
 
 geoip2 reader 在每次调用时打开/关闭，避免多线程共享。
+GeoIP 数据库路径来自 Config.GEOIP_{CITY,ASN,COUNTRY}，缺失时对应函数返回空。
 """
 from __future__ import annotations
 
@@ -79,6 +80,26 @@ def get_ip_city(ip: str) -> dict:
             "country_code": response.country.iso_code,
             "region_name": response.subdivisions.most_specific.name,
             "region_code": response.subdivisions.most_specific.iso_code,
+        }
+        reader.close()
+        return item
+    except Exception as e:
+        logger.warning(f"{e} {ip}")
+        return {}
+
+
+def get_ip_country(ip: str) -> dict:
+    """仅依赖 GeoLite2-Country 数据库，比 City 库小很多，适合只关心国家的场景。"""
+    from ..logger import get_logger
+    logger = get_logger()
+    if not Config.GEOIP_COUNTRY:
+        return {}
+    try:
+        reader = geoip2.database.Reader(Config.GEOIP_COUNTRY)
+        response = reader.country(ip)
+        item = {
+            "country_name": response.country.name,
+            "country_code": response.country.iso_code,
         }
         reader.close()
         return item
