@@ -4,10 +4,8 @@
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import os
-import subprocess
 from typing import List
 
 from ..config import Config
@@ -37,8 +35,8 @@ class InfoHunter:
             if os.path.exists(p):
                 try:
                     os.unlink(p)
-                except Exception as e:
-                    logger.warning(e)
+                except OSError as e:
+                    logger.warning(f"清理 wih 临时文件失败 {p}: {e}")
 
     async def exec_wih(self):
         command = [self.wih_bin_path, f"-r {Config.WIH_RULE_PATH}", "-J",
@@ -84,10 +82,11 @@ class InfoHunter:
             logger.warning("not found webInfoHunter binary")
             return []
         self._get_target_file()
-        await self.exec_wih()
-        results = self.dump_result()
-        self._delete_file()
-        return results
+        try:
+            await self.exec_wih()
+            return self.dump_result()
+        finally:
+            self._delete_file()
 
 
 async def run_wih(sites: List[str]) -> List[WihRecord]:

@@ -25,7 +25,7 @@ def target2list(target: str) -> list[str]:
 
 def get_ip_domain_list(target: str):
     """拆分目标为 (ip_list, domain_list)，校验黑名单/禁止域名/合法性。"""
-    from ..utils import (check_domain_black, domain_util, is_forbidden_domain,
+    from ..utils import (check_domain_black, is_forbidden_domain,
                           is_valid_domain, is_valid_fuzz_domain, is_vaild_ip_target, not_in_black_ips)
     target_lists = target2list(target)
     ip_list: set[str] = set()
@@ -117,7 +117,7 @@ async def submit_task(task_data: dict) -> dict:
         logger.info(f"target:{target} task_id:{task_id} run_id:{run_id}")
         task_data["celery_id"] = run_id
         await conn_db('task').update_one({"_id": ObjectId(task_id)}, {"$set": {"celery_id": run_id}})
-    except Exception as e:
+    except Exception:
         await conn_db('task').delete_one({"_id": ObjectId(task_id), "status": TaskStatus.WAITING})
         logger.info(f"下发失败 {target}")
         raise

@@ -17,7 +17,6 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Callable
 
 
@@ -215,7 +214,7 @@ def check_expression(expression: str) -> bool:
     try:
         _check_expression(expression)
         return True
-    except (ExprError, Exception) as e:
+    except Exception as e:
         from ...logger import get_logger
         get_logger().error(f"Invalid expression: {expression}  exception: {e}")
         return False

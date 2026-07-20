@@ -15,9 +15,12 @@ from ..helpers import asset_wih_monitor as asset_wih_monitor_helper
 from ..helpers.task_schedule import task_scheduler
 from ..logger import get_logger
 from ..modules import AssetScopeType, SchedulerStatus
-from ..utils import curr_date, time2date
+from ..utils import time2date
 
 logger = get_logger()
+
+# 永不触发的占位时间戳（用于 stop_job）
+_FAR_FUTURE_TS = 2**62
 
 # 监控任务默认选项（与原 app/scheduler.py 一致）
 domain_monitor_options = {
@@ -85,17 +88,18 @@ async def stop_job(job_id: str):
     if not item:
         return None
     item["next_run_date"] = "-"
-    item["next_run_time"] = 2**63 - 1  # sys.maxsize 等价
+    item["next_run_time"] = _FAR_FUTURE_TS  # 阻止到期触发
     item["status"] = SchedulerStatus.STOP
     return await conn('scheduler').find_one_and_replace({"_id": ObjectId(job_id)}, item)
 
 
 async def recover_job(job_id: str):
-    current_time = int(time.time()) + 30
+    current_time = int(time.time())
     item = await find_job(job_id)
     if not item:
         return None
-    next_run_time = current_time + item["interval"]
+    interval = item.get("interval") or 3600
+    next_run_time = current_time + interval
     item["next_run_date"] = time2date(next_run_time)
     item["next_run_time"] = next_run_time
     item["status"] = SchedulerStatus.RUNNING

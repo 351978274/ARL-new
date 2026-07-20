@@ -1,7 +1,6 @@
 """Web 应用识别（phantomjs + wappalyzer driver.js），移植自原 app/services/webAnalyze.py。"""
 from __future__ import annotations
 
-import asyncio
 import json
 import time
 

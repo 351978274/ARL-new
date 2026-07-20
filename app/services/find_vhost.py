@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import difflib
-import json
 
 from ..core.base_task import AsyncBaseTask, thread_map
 from ..core.http_client import http_req

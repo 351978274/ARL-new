@@ -33,26 +33,17 @@ class NPoC:
     """PoC 运行器。xing 缺失时方法降级。"""
 
     def __init__(self, concurrency: int = 6, tmp_dir: str = "./"):
-        self._plugins = None
-        self._poc_info_list = None
+        self._plugins: list | None = None
+        self._poc_info_list: list | None = None
         self.concurrency = concurrency
-        self._plugin_name_list = None
+        self._plugin_name_list: list | None = None
         self.plugin_name_set: set[str] = set()
-        self._db_plugin_name_list = None
         self.tmp_dir = tmp_dir
         self.runner = None
         self.result: list = []
         self.brute_plugin_name_set: set[str] = set()
         self.poc_plugin_name_set: set[str] = set()
         self.sniffer_plugin_name_set: set[str] = set()
-
-    @property
-    def db_plugin_name_list(self) -> list:
-        if self._db_plugin_name_list is None:
-            self._db_plugin_name_list = []
-            # 同步遍历（启动期），用 to_thread
-            pass
-        return self._db_plugin_name_list
 
     @property
     def plugin_name_list(self) -> list:
@@ -83,6 +74,8 @@ class NPoC:
         info_list = []
         for p in self.plugins:
             info = {"plugin_name": getattr(p, "_plugin_name", "")}
+            if not info["plugin_name"]:
+                continue
             if p.plugin_type == PluginType.SNIFFER:
                 self.sniffer_plugin_name_set.add(info["plugin_name"])
                 continue
@@ -123,33 +116,38 @@ class NPoC:
         npoc_conf.SAVE_TEXT_RESULT_FILENAME = ""
         random_file = os.path.join(self.tmp_dir, f"npoc_result_{random_choices()}.txt")
         npoc_conf.SAVE_JSON_RESULT_FILENAME = random_file
-        plugins = self.filter_plugin_by_name(plugin_name_list)
-        runner = PluginRunner.PluginRunner(plugins=plugins, targets=targets, concurrency=self.concurrency)
-        self.runner = runner
-        runner.run()
-        if not os.path.exists(random_file):
-            return self.result
-        for item in load_file(random_file):
-            self.result.append(json.loads(item))
-        os.unlink(random_file)
+        try:
+            plugins = self.filter_plugin_by_name(plugin_name_list)
+            runner = PluginRunner.PluginRunner(plugins=plugins, targets=targets, concurrency=self.concurrency)
+            self.runner = runner
+            runner.run()
+            if not os.path.exists(random_file):
+                return self.result
+            for item in load_file(random_file):
+                self.result.append(json.loads(item))
+        finally:
+            # 确保异常路径下临时文件也被清理
+            if os.path.exists(random_file):
+                try:
+                    os.unlink(random_file)
+                except OSError as e:
+                    logger.warning(f"清理临时 PoC 结果失败: {e}")
         return self.result
 
     def filter_plugin_by_name(self, plugin_name_list):
+        plugin_name_set = set(plugin_name_list or [])
         return [p for p in self.plugins
-                if getattr(p, "_plugin_name", "") and getattr(p, "_plugin_name") in plugin_name_list]
+                if getattr(p, "_plugin_name", "") and getattr(p, "_plugin_name") in plugin_name_set]
 
 
-def sync_to_db(del_flag: bool = False):
-    """xing 插件信息同步到 poc 集合（同步入口，内部异步）。"""
+async def sync_to_db(del_flag: bool = False) -> bool:
+    """xing 插件信息同步到 poc 集合（异步入口）。
+
+    若在已有事件循环中调用，应直接 `await sync_to_db()`；
+    命令行 / 同步上下文中可通过 ``asyncio.run(sync_to_db())`` 触发。
+    """
     n = NPoC()
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        # 在已有事件循环中：返回协程
-        async def _run():
-            await n.sync_to_db()
-            return True
-        return _run()
-    loop.run_until_complete(n.sync_to_db())
+    await n.sync_to_db()
     return True
 
 
@@ -169,8 +167,9 @@ async def run_sniffer(targets) -> list:
         target = x.get("verify_data", "")
         if "://" not in target:
             continue
-        split = target.split("://")
-        scheme = split[0]
-        rest = split[1].split(":")
-        ret.append({"scheme": scheme, "host": rest[0], "port": rest[1], "target": target})
+        scheme, _, rest = target.partition("://")
+        host, _, port_str = rest.partition(":")
+        if not host or not port_str:
+            continue
+        ret.append({"scheme": scheme, "host": host, "port": port_str, "target": target})
     return ret

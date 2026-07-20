@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import time
 
-import httpx
-
 from ..core.base_task import AsyncBaseTask
 from ..core.http_client import http_req
 from ..logger import get_logger
@@ -49,7 +47,7 @@ class CheckHTTP(AsyncBaseTask):
             out = await self.check(url)
             if out is not None:
                 self.checkout_map[url] = out
-        except (httpx.HTTPError, Exception) as e:
+        except Exception as e:
             logger.debug(f"check_http error on {url}: {e}")
 
     async def run(self) -> dict[str, dict]:

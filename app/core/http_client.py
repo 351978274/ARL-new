@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import json as _json
 import time
 from typing import Any
 
@@ -15,6 +16,8 @@ import httpx
 from ..config import Config
 
 CONTENT_CHUNK_SIZE = 10 * 1024
+DEFAULT_CONNECT_TIMEOUT = 10.1
+DEFAULT_READ_TIMEOUT = 30.1
 UA = ("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
 
@@ -32,6 +35,18 @@ def _default_headers(headers: dict | None) -> dict:
     headers.setdefault("User-Agent", UA)
     headers.setdefault("Cache-Control", "max-age=0")
     return headers
+
+
+def _parse_timeout(raw_timeout) -> tuple[float, float]:
+    """解析 timeout 为 (connect, read)；空值回退到默认。"""
+    if isinstance(raw_timeout, (tuple, list)):
+        connect = raw_timeout[0] if raw_timeout and raw_timeout[0] else DEFAULT_CONNECT_TIMEOUT
+        read = (raw_timeout[1] if len(raw_timeout) > 1 and raw_timeout[1]
+                else DEFAULT_READ_TIMEOUT)
+        return float(connect), float(read)
+    if raw_timeout:
+        return float(raw_timeout), float(raw_timeout)
+    return DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT
 
 
 class HttpResponse:
@@ -62,43 +77,24 @@ class HttpResponse:
         return str(self._response.url)
 
     def json(self) -> Any:
-        import json as _json
         return _json.loads(self._content)
 
 
 async def _stream_read(response: httpx.Response, read_timeout: float) -> bytes:
     """流式读取响应体，超过 read_timeout 秒抛 httpx.ReadTimeout（对应 patch_content）。"""
-    body = b""
+    body = bytearray()
     start_at = time.time()
     async for chunk in response.aiter_bytes(CONTENT_CHUNK_SIZE):
-        body += chunk
+        body.extend(chunk)
         if read_timeout and (time.time() - start_at) >= read_timeout:
             raise httpx.ReadTimeout(f"read http response timeout: {read_timeout}", request=response.request)
-    return body
+    return bytes(body)
 
 
-async def http_req(url: str, method: str = 'get', **kwargs) -> HttpResponse:
-    """异步 HTTP 请求，等价于原 http_req。
-
-    默认 verify=False, allow_redirects=False, timeout=(10.1, 30.1)。
-    流式读取以支持读超时控制。
-    """
-    # 分离自定义参数
-    verify = kwargs.pop('verify', False)
-    raw_timeout = kwargs.pop('timeout', (10.1, 30.1))
-    allow_redirects = kwargs.pop('allow_redirects', False)
-    headers = _default_headers(kwargs.pop("headers", None))
-
-    # 解析 timeout：元组(connect, read) 或单值
-    if isinstance(raw_timeout, (tuple, list)):
-        connect_timeout = raw_timeout[0] if raw_timeout[0] else 10.1
-        read_timeout = raw_timeout[1] if len(raw_timeout) > 1 and raw_timeout[1] else 30.1
-    else:
-        connect_timeout = raw_timeout
-        read_timeout = raw_timeout
-
-    timeout = httpx.Timeout(connect=connect_timeout, read=read_timeout, write=read_timeout, pool=connect_timeout)
-
+def _build_client_kwargs(verify, raw_timeout, allow_redirects, headers) -> dict[str, Any]:
+    connect_timeout, read_timeout = _parse_timeout(raw_timeout)
+    timeout = httpx.Timeout(connect=connect_timeout, read=read_timeout,
+                            write=read_timeout, pool=connect_timeout)
     client_kwargs: dict[str, Any] = {
         "verify": verify,
         "timeout": timeout,
@@ -107,6 +103,21 @@ async def http_req(url: str, method: str = 'get', **kwargs) -> HttpResponse:
         "trust_env": False,
     }
     client_kwargs.update(_proxy_kwargs())
+    return client_kwargs, read_timeout
+
+
+async def http_req(url: str, method: str = 'get', **kwargs) -> HttpResponse:
+    """异步 HTTP 请求，等价于原 http_req。
+
+    默认 verify=False, allow_redirects=False, timeout=(10.1, 30.1)。
+    流式读取以支持读超时控制。
+    """
+    verify = kwargs.pop('verify', False)
+    raw_timeout = kwargs.pop('timeout', (DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT))
+    allow_redirects = kwargs.pop('allow_redirects', False)
+    headers = _default_headers(kwargs.pop("headers", None))
+
+    client_kwargs, read_timeout = _build_client_kwargs(verify, raw_timeout, allow_redirects, headers)
 
     method_lower = method.lower()
     async with httpx.AsyncClient(**client_kwargs) as client:
@@ -118,14 +129,12 @@ async def http_req(url: str, method: str = 'get', **kwargs) -> HttpResponse:
 
 async def http_req_simple(url: str, method: str = 'get', **kwargs) -> HttpResponse:
     """简易版：不强制流式读超时，适合小响应（如 favicon）。"""
-    kwargs.setdefault('verify', False)
-    kwargs.setdefault('timeout', (10.1, 30.1))
-    kwargs.setdefault('follow_redirects', False)
+    verify = kwargs.pop('verify', False)
+    raw_timeout = kwargs.pop('timeout', (DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT))
+    allow_redirects = kwargs.pop('allow_redirects', False)
     headers = _default_headers(kwargs.pop("headers", None))
-    client_kwargs = {"verify": kwargs.pop('verify'), "timeout": kwargs.pop('timeout'),
-                     "follow_redirects": kwargs.pop('follow_redirects'), "headers": headers,
-                     "trust_env": False}
-    client_kwargs.update(_proxy_kwargs())
+
+    client_kwargs, _ = _build_client_kwargs(verify, raw_timeout, allow_redirects, headers)
     async with httpx.AsyncClient(**client_kwargs) as client:
         request_method = getattr(client, method.lower(), client.get)
         r = await request_method(url, **kwargs)

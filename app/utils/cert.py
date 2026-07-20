@@ -100,8 +100,8 @@ def parse_certs(certs_pem: str) -> dict:
         fingerprint_obj['sha256'] = ospj.digest('sha256').decode().replace(":", "").lower()
         fingerprint_obj['md5'] = ospj.digest('md5').decode().replace(":", "").lower()
     else:
+        # cryptography x509 对象：直接使用 .fingerprint(hash_algorithm)
         import hashlib
-        der = ospj.public_bytes(encoding_pem_false()) if False else ospj.fingerprint.__self__.public_bytes.__self__.public_bytes(0)
         fingerprint_obj['sha1'] = ospj.fingerprint(hashlib.sha1).hex()
         fingerprint_obj['sha256'] = ospj.fingerprint(hashlib.sha256).hex()
         fingerprint_obj['md5'] = ospj.fingerprint(hashlib.md5).hex()

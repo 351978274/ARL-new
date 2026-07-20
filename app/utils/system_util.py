@@ -5,7 +5,6 @@ import asyncio
 import hashlib
 import random
 import re
-import shlex
 import string
 import subprocess
 

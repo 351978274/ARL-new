@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import collections
 from typing import Any, Awaitable, Callable
 
 from ..logger import get_logger

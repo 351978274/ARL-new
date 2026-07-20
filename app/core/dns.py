@@ -64,7 +64,7 @@ def domain_parsed(domain: str, fail_silently: bool = True) -> dict | None:
     try:
         res = get_tld(domain, fix_protocol=True, as_object=True)
         return {"subdomain": res.subdomain, "domain": res.domain, "fld": res.fld}
-    except Exception as e:
+    except Exception:
         if not fail_silently:
             raise
         return None

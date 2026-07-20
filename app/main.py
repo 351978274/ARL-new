@@ -9,15 +9,17 @@
 """
 from __future__ import annotations
 
-import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from . import __version__
 from .config import Config, ROOT_DIR
-from .database import ping
+from .database import close_client, ping
 from .logger import get_logger
 from .routes import all_routers
 from .utils.user import init_admin_user
@@ -26,6 +28,10 @@ logger = get_logger()
 
 # APScheduler 实例（在 lifespan 中管理）
 _scheduler = None
+
+# 前端 dist 目录（启动时一次性解析）
+_DIST_DIR = os.path.join(ROOT_DIR, "frontend", "dist")
+_HAS_FRONTEND = os.path.isdir(_DIST_DIR) and os.path.isfile(os.path.join(_DIST_DIR, "index.html"))
 
 
 async def _start_scheduler():
@@ -56,7 +62,7 @@ async def _stop_scheduler():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期：启动时初始化。"""
+    """应用生命周期：启动时初始化，停止时清理。"""
     # 检查 MongoDB
     if await ping():
         logger.info(f"MongoDB 连接成功: {Config.MONGO_URL} / {Config.MONGO_DB}")
@@ -70,7 +76,38 @@ async def lifespan(app: FastAPI):
     logger.info(f"ARL v{__version__} 启动完成")
     yield
     await _stop_scheduler()
+    await close_client()
     logger.info("ARL 已停止")
+
+
+def _create_cors_middleware(app: FastAPI) -> None:
+    """配置 CORS。生产环境建议在 config.yaml 中收紧 allow_origins。"""
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+def _mount_frontend(app: FastAPI) -> None:
+    """挂载前端静态资源 + SPA fallback（仅当 frontend/dist 存在时）。"""
+    if not _HAS_FRONTEND:
+        return
+
+    assets_dir = os.path.join(_DIST_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    index_html = os.path.join(_DIST_DIR, "index.html")
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        # /api、/image 由各自路由处理，避免误返回 index.html
+        if full_path.startswith(("api/", "image/")) or full_path in ("api", "image"):
+            return {"detail": "Not Found"}
+        return FileResponse(index_html)
 
 
 def create_app() -> FastAPI:
@@ -83,31 +120,13 @@ def create_app() -> FastAPI:
         openapi_url="/api/openapi.json",
         lifespan=lifespan,
     )
-    app.add_middleware(
-        CORSMiddleware, allow_origins=["*"], allow_credentials=True,
-        allow_methods=["*"], allow_headers=["*"],
-    )
+    _create_cors_middleware(app)
+
     # 所有路由挂载在 /api 前缀
     for router in all_routers:
         app.include_router(router, prefix="/api")
 
-    # 静态托管前端（若 frontend/dist 存在）
-    import os
-    from fastapi.staticfiles import StaticFiles
-    dist_dir = os.path.join(ROOT_DIR, "frontend", "dist")
-    if os.path.isdir(dist_dir):
-        app.mount("/assets", StaticFiles(directory=os.path.join(dist_dir, "assets")), name="assets")
-
-        # SPA fallback：非 /api、非 /image 路径返回 index.html
-        @app.get("/{full_path:path}")
-        async def spa_fallback(full_path: str):
-            from fastapi.responses import FileResponse
-            if full_path.startswith(("api", "image")):
-                return {"detail": "Not Found"}
-            index = os.path.join(dist_dir, "index.html")
-            if os.path.isfile(index):
-                return FileResponse(index)
-            return {"detail": "Not Found"}
+    _mount_frontend(app)
     return app
 
 

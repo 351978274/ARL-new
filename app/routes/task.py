@@ -4,8 +4,6 @@
 """
 from __future__ import annotations
 
-from typing import Any
-
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
@@ -13,11 +11,11 @@ from pydantic import BaseModel, Field
 from ..database import conn_db
 from ..deps import require_auth
 from ..helpers import get_options_by_policy_id, submit_task_task, submit_risk_cruising
-from ..helpers.task import get_task_data, restart_task, submit_task
+from ..helpers.task import restart_task
 from ..logger import get_logger
-from ..modules import (ErrorMsg, TaskAction, TaskStatus, TaskSyncStatus, TaskTag, TaskType,
+from ..modules import (TaskAction, TaskStatus, TaskSyncStatus, TaskTag, TaskType,
                        build_ret, error_map)
-from .base import build_data, build_db_query, parse_query_params
+from .base import build_data, parse_query_params
 
 logger = get_logger()
 router = APIRouter(prefix="/task", tags=["任务"], dependencies=[Depends(require_auth)])

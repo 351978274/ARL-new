@@ -5,16 +5,15 @@
 """
 from __future__ import annotations
 
-import base64
 import binascii
 import time
 from urllib.parse import urljoin, urlparse
 
 import mmh3
-import httpx
 from pyquery import PyQuery as pq
 
 from ..core.base_task import AsyncBaseTask
+from ..core.dns import domain_parsed
 from ..core.fingerprint import fetch_fingerprint as _fetch_fingerprint, finger_db_cache, finger_db_identify, load_fingerprint
 from ..core.http_client import http_req
 from ..logger import get_logger
@@ -104,12 +103,6 @@ async def fetch_favicon(url: str) -> dict:
     return await FetchFavicon(url).run()
 
 
-def _finger_identify_db(content: bytes, header: str, title: str, favicon_hash: str) -> list[str]:
-    """同步部分：把 content decode 后调用 DB 指纹（DB 指纹内部异步，这里不直接调用）。"""
-    # 实际异步调用在 FetchSite.fetch_fingerprint 中处理
-    raise NotImplementedError  # 仅占位，避免误用
-
-
 class FetchSite(AsyncBaseTask):
     def __init__(self, sites, concurrency: int = 15, http_timeout=None):
         super().__init__(sites, concurrency=concurrency)
@@ -171,8 +164,6 @@ class FetchSite(AsyncBaseTask):
 
         await self.fetch_fingerprint(item, content=conn.content)
 
-        dp = None
-        from ..core.dns import domain_parsed
         dp = domain_parsed(hostname)
         if dp:
             item["fld"] = dp["fld"]

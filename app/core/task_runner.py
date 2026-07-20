@@ -25,6 +25,8 @@ logger = get_logger()
 _running_tasks: dict[str, asyncio.Task] = {}
 # task_id -> run_id（便于按 task_id 取消）
 _task_id_to_run_id: dict[str, str] = {}
+# 反向索引：run_id -> task_id（O(1) 清理）
+_run_id_to_task_id: dict[str, str] = {}
 
 
 async def submit_task_action(options: dict) -> str:
@@ -39,17 +41,16 @@ async def submit_task_action(options: dict) -> str:
     task_id = options.get("data", {}).get("task_id")
     if task_id:
         _task_id_to_run_id[task_id] = run_id
+        _run_id_to_task_id[run_id] = task_id
     task.add_done_callback(lambda t: _on_done(run_id, t))
     return run_id
 
 
 def _on_done(run_id: str, task: asyncio.Task) -> None:
     _running_tasks.pop(run_id, None)
-    # 反向映射清理
-    for tid, rid in list(_task_id_to_run_id.items()):
-        if rid == run_id:
-            _task_id_to_run_id.pop(tid, None)
-            break
+    task_id = _run_id_to_task_id.pop(run_id, None)
+    if task_id:
+        _task_id_to_run_id.pop(task_id, None)
     if task.cancelled():
         return
     exc = task.exception()
@@ -79,7 +80,7 @@ async def _run_with_logging(run_id: str, options: dict) -> None:
 
 async def run_task(options: dict) -> None:
     """按 task_action 分发到对应流水线。"""
-    from .. import tasks as wrap_tasks
+    from .. import tasks  # noqa: F401  触发 tasks 包内 import 副作用（注册/校验）
 
     action = options.get("celery_action")
     data = options.get("data", {})

@@ -44,31 +44,40 @@ class MassDNS:
 
     def parse_mass_dns_output(self) -> list[dict]:
         output = []
-        with open(self.mass_dns_output_path, "r+", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                data = line.split(" ")
-                if len(data) != 3:
-                    continue
-                domain, _type, record = data
-                record = record.strip().strip(".")
-                if record in self.wildcard_domain_ip:
-                    continue
-                output.append({"domain": domain.strip("."), "type": _type, "record": record})
-        self._delete_file()
+        try:
+            with open(self.mass_dns_output_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    data = line.split(" ")
+                    if len(data) != 3:
+                        continue
+                    domain, _type, record = data
+                    record = record.strip().strip(".")
+                    if record in self.wildcard_domain_ip:
+                        continue
+                    output.append({"domain": domain.strip("."), "type": _type, "record": record})
+        except FileNotFoundError:
+            logger.warning(f"massdns 输出文件不存在: {self.mass_dns_output_path}")
+        finally:
+            self._delete_file()
         return output
 
     def _delete_file(self):
         for p in (self.domain_gen_output_path, self.mass_dns_output_path):
             try:
                 os.unlink(p)
-            except Exception as e:
-                logger.warning(e)
+            except FileNotFoundError:
+                pass
+            except OSError as e:
+                logger.warning(f"清理 massdns 临时文件失败 {p}: {e}")
 
     async def run(self) -> list[dict]:
         self.domain_write()
-        await self.mass_dns()
-        return self.parse_mass_dns_output()
+        try:
+            await self.mass_dns()
+            return self.parse_mass_dns_output()
+        finally:
+            self._delete_file()
 
 
 async def mass_dns(based_domain: str, words, wildcard_domain_ip=None) -> list[dict]:

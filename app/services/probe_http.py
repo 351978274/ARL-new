@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import time
 
-import httpx
-
 from ..core.base_task import AsyncBaseTask
 from ..core.http_client import http_req
 from ..logger import get_logger
@@ -41,12 +39,13 @@ class ProbeHTTP(AsyncBaseTask):
         logger.info(f"start ProbeHTTP {len(self.targets)}")
         await self._run()
         # 去重：https 优先，去掉与 https 同源的 http
+        site_set = set(self.sites)
         alive_site: list[str] = []
         for x in self.sites:
             if x.startswith("https://"):
                 alive_site.append(x)
             elif x.startswith("http://"):
-                if "https://" + x[7:] not in self.sites:
+                if "https://" + x[7:] not in site_set:
                     alive_site.append(x)
         logger.info(f"end ProbeHTTP {len(alive_site)} elapse {time.time()-t1:.2f}s")
         return alive_site

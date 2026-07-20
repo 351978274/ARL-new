@@ -40,8 +40,8 @@ class NucleiScan:
             if os.path.exists(p):
                 try:
                     os.unlink(p)
-                except Exception as e:
-                    logger.warning(e)
+                except OSError as e:
+                    logger.warning(f"清理 nuclei 临时文件失败 {p}: {e}")
 
     def check_have_nuclei(self) -> bool:
         try:
@@ -95,10 +95,11 @@ class NucleiScan:
             return []
         # _check_json_flag 使用 subprocess 同步，放线程池
         await asyncio.to_thread(self._check_json_flag)
-        await self.exec_nuclei()
-        results = self.dump_result()
-        self._delete_file()
-        return results
+        try:
+            await self.exec_nuclei()
+            return self.dump_result()
+        finally:
+            self._delete_file()
 
 
 async def nuclei_scan(targets: list) -> list[dict]:

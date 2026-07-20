@@ -6,7 +6,7 @@ import os
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
-from ..config import Config, ROOT_DIR
+from ..config import Config
 from ..deps import require_auth
 
 image_router = APIRouter(prefix="/image", tags=["截图"], dependencies=[Depends(require_auth)])

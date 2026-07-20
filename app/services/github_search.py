@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import time
 from collections import deque
 
 from ..config import Config

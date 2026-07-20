@@ -12,7 +12,10 @@ _client: AsyncIOMotorClient | None = None
 
 
 def get_client() -> AsyncIOMotorClient:
-    """获取全局 AsyncIOMotorClient 单例。"""
+    """获取全局 AsyncIOMotorClient 单例。
+
+    首次创建时从 Config.MONGO_URL 读取连接串。可通过 close_client() 显式关闭。
+    """
     global _client
     if _client is None:
         _client = AsyncIOMotorClient(Config.MONGO_URL)
@@ -35,9 +38,17 @@ def conn_db(collection: str, db_name: str | None = None) -> AsyncIOMotorCollecti
 
 
 async def ping() -> bool:
-    """检测 MongoDB 是否可连。"""
+    """检测 MongoDB 是否可连（serverInfo 默认 1s 超时）。"""
     try:
         await get_client().admin.command("ping")
         return True
     except Exception:
         return False
+
+
+async def close_client() -> None:
+    """关闭全局 motor 客户端（应用退出时调用）。"""
+    global _client
+    if _client is not None:
+        _client.close()
+        _client = None

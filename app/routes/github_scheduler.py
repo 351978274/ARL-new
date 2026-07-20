@@ -9,9 +9,9 @@ from pydantic import BaseModel
 from ..database import conn_db
 from ..deps import require_auth
 from ..modules import SchedulerStatus, build_ret, error_map
-from ..utils import curr_date, time2date
+from ..utils import time2date
 from ..utils.cron_util import check_cron
-from ..utils.github_task import delete_github_scheduler, find_github_scheduler, recover_task, stop_task
+from ..utils.github_task import delete_github_scheduler, recover_task, stop_task
 from .base import build_data, parse_query_params
 
 router = APIRouter(prefix="/github_scheduler", tags=["Github监控任务"], dependencies=[Depends(require_auth)])

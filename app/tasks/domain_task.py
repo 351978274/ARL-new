@@ -29,7 +29,7 @@ from ..services.massdns import mass_dns
 from ..services.alt_dns import alt_dns as _alt_dns
 from ..services.resolver_domain import resolver_domain
 from ..utils import (arl_domain, check_domain_black, curr_date, domain_parsed,
-                     get_cdn_name_by_cname, get_cdn_name_by_ip, get_cname, get_fld, get_ip,
+                     get_cdn_name_by_cname, get_cdn_name_by_ip, get_cname, get_ip,
                      load_file, random_choices)
 
 logger = get_logger()

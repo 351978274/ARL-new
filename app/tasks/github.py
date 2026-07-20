@@ -5,7 +5,7 @@ from bson import ObjectId
 
 from ..config import Config
 from ..database import conn_db
-from ..helpers.message_notify import push_dingding, push_email
+from ..helpers.message_notify import push_dingding
 from ..logger import get_logger
 from ..modules import TaskStatus
 from ..services.github_search import GithubResult, github_search

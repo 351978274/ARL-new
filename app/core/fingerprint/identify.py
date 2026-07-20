@@ -1,8 +1,6 @@
 """单个指纹规则对象 + DB 规则缓存，移植自原 app/services/fingerprint.py + fingerprint_cache.py。"""
 from __future__ import annotations
 
-import hashlib
-
 from . import expr
 
 
@@ -13,18 +11,15 @@ class FingerPrint:
         self.app_name = app_name
         self.human_rule = human_rule
         self._parsed = None
-        self._parsed_cache: dict[str, object] = {}
 
-    def build_parsed(self):
-        key = hashlib.md5(self.human_rule.encode()).hexdigest()
-        if self._parsed_cache.get(key) is None:
-            self._parsed_cache[key] = expr.parse_expression(self.human_rule)
-        return self._parsed_cache[key]
+    @property
+    def parsed(self):
+        if self._parsed is None:
+            self._parsed = expr.parse_expression(self.human_rule)
+        return self._parsed
 
     def identify(self, variables: dict) -> bool:
-        if self._parsed is None:
-            self._parsed = self.build_parsed()
-        return expr.evaluate_expression(self._parsed, variables)
+        return expr.evaluate_expression(self.parsed, variables)
 
 
 class FingerPrintCache:
@@ -37,9 +32,8 @@ class FingerPrintCache:
         return self.cache is not None
 
     async def get_data(self) -> list[FingerPrint]:
-        if self.is_cache_valid():
-            return self.cache  # type: ignore[return-value]
-        await self.update_cache()
+        if not self.is_cache_valid():
+            await self.update_cache()
         return self.cache  # type: ignore[return-value]
 
     async def update_cache(self):

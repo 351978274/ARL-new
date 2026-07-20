@@ -91,7 +91,8 @@ class PoCCategory:
     POC = "漏洞PoC"
     SNIFFER = "协议识别"
     SYSTEM_BRUTE = "服务弱口令"
-    WEBB_RUTE = "应用弱口令"
+    WEBB_RUTE = "应用弱口令"  # 保留历史拼写以兼容外部代码
+    WEB_BRUTE = "应用弱口令"  # 修正后的拼写别名（与 WEBB_RUTE 等价）
 
 
 class WebSiteFetchOption:

@@ -121,13 +121,12 @@ def parse_human_rule(rule: str) -> dict | None:
             if value[0] != '"' or value[-1] != '"':
                 continue
             empty_flag = False
-            try:
-                value.encode("gbk")  # 防御性
-            except Exception:
-                pass
             value = value[1:-1]
             if key == "icon_hash":
-                value = int(value)
+                try:
+                    value = int(value)
+                except ValueError:
+                    continue
             rule_map[key_map[key]].append(value)
 
     return None if empty_flag else rule_map
