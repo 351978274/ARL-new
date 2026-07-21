@@ -1,6 +1,8 @@
 """核心工具函数测试：域名/IP/URL 校验、端口解析、时间。"""
 import pytest
 
+from app.config import Config, ScanPortPresets
+from app.modules import ScanPortType, load_port_list
 from app.utils import (
     build_port_custom,
     is_in_scope,
@@ -77,6 +79,35 @@ class TestPort:
     def test_exclude_invalid(self):
         assert not is_valid_exclude_ports("abc")
         assert not is_valid_exclude_ports("70000")
+
+
+def _file_joined(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return ",".join(line.strip() for line in f if line.strip())
+
+
+class TestScanPortType:
+    """端口预设优先从 dicts/port_*.txt 读取，文件缺失则回退硬编码常量。"""
+
+    def test_test_matches_file(self):
+        assert ScanPortType.TEST == _file_joined(Config.PORT_DICT_TEST)
+
+    def test_top100_matches_file(self):
+        assert ScanPortType.TOP100 == _file_joined(Config.PORT_DICT_TOP100)
+
+    def test_top1000_matches_file(self):
+        assert ScanPortType.TOP1000 == _file_joined(Config.PORT_DICT_TOP1000)
+
+    def test_all_matches_file(self):
+        # port_all.txt 内容为 1-65535（端口 0 不可扫）
+        assert ScanPortType.ALL == _file_joined(Config.PORT_DICT_ALL)
+
+    def test_fallback_on_missing_file(self):
+        # 指向不存在路径时应回退到硬编码常量
+        assert load_port_list("/no/such/port_test.txt", ScanPortPresets.TOP_10) == ScanPortPresets.TOP_10
+
+    def test_fallback_on_empty_path(self):
+        assert load_port_list("", ScanPortPresets.ALL) == ScanPortPresets.ALL
 
 
 class TestURL:

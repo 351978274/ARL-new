@@ -14,6 +14,7 @@ from .export import export_router, batch_router
 from .task_fofa import router as task_fofa_router
 from .github_scheduler import router as github_scheduler_router
 from .image import console_router, image_router
+from .dirsearch import router as dirsearch_router
 from .generic import routers as generic_routers
 
 # 所有路由汇总
@@ -21,6 +22,7 @@ all_routers: list = [
     task_router, user_router, asset_scope_router, scheduler_router,
     fingerprint_router, policy_router, export_router, batch_router,
     task_fofa_router, github_scheduler_router, image_router, console_router,
+    dirsearch_router,
     *generic_routers,
 ]
 

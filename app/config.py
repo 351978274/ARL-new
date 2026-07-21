@@ -111,6 +111,13 @@ class Settings(BaseModel):
     DOMAIN_DICT_2W: str = os.path.join(DICTS_DIR, "domain_2w.txt")
     DNS_SERVER: str = os.path.join(DICTS_DIR, "dnsserver.txt")
 
+    # 端口扫描预设字典，每行一个端口或范围（如 8080-8090），逗号拼接后交给 nmap
+    PORT_DICT_TEST: str = os.path.join(DICTS_DIR, "port_test.txt")
+    PORT_DICT_TOP100: str = os.path.join(DICTS_DIR, "port_top100.txt")
+    PORT_DICT_TOP1000: str = os.path.join(DICTS_DIR, "port_top1000.txt")
+    PORT_DICT_ALL: str = os.path.join(DICTS_DIR, "port_all.txt")
+    PORT_DICT_CUSTOM: str = os.path.join(DICTS_DIR, "port_custom.txt")
+
     CDN_JSON_PATH: str = os.path.join(DICTS_DIR, "cdn_info.json")
     WIH_RULE_PATH: str = os.path.join(DICTS_DIR, "wih_rules.yml")
 
@@ -259,6 +266,15 @@ def _build_settings() -> "Settings":
                 s.DOMAIN_DICT_2W = arl["DOMAIN_DICT"]
             if arl.get("FILE_LEAK_DICT") and os.path.isfile(arl["FILE_LEAK_DICT"]):
                 s.FILE_LEAK_TOP_2k = arl["FILE_LEAK_DICT"]
+            # 端口字典可选覆盖（文件需存在，否则保留默认指向 dicts/）
+            for _key, _attr in (("PORT_DICT_TEST", "PORT_DICT_TEST"),
+                                ("PORT_DICT_TOP100", "PORT_DICT_TOP100"),
+                                ("PORT_DICT_TOP1000", "PORT_DICT_TOP1000"),
+                                ("PORT_DICT_ALL", "PORT_DICT_ALL"),
+                                ("PORT_DICT_CUSTOM", "PORT_DICT_CUSTOM")):
+                _v = arl.get(_key)
+                if _v and os.path.isfile(_v):
+                    setattr(s, _attr, _v)
             forbidden = arl.get("FORBIDDEN_DOMAINS")
             if forbidden is not None:
                 if not isinstance(forbidden, list):

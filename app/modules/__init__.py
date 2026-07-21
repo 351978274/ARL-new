@@ -24,6 +24,7 @@ from .enums import (
     TaskType,
     WebSiteFetchOption,
     WebSiteFetchStatus,
+    load_port_list,
     # 兼容别名
     CeleryAction,
     CeleryRoutingKey,
@@ -44,6 +45,8 @@ __all__ = [
     "TaskSyncStatus", "SchedulerStatus", "AssetScopeType", "PoCCategory",
     "WebSiteFetchOption", "WebSiteFetchStatus", "TaskQueue", "TaskAction",
     "CeleryAction", "CeleryRoutingKey",
+    # 端口字典加载
+    "load_port_list",
     # 错误
     "error_map", "ErrorMsg", "build_ret",
 ]

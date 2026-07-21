@@ -25,6 +25,7 @@ EXPORT_FIELD_MAP = {
     "site": "site", "domain": "domain", "ip": "ip", "asset_site": "site",
     "asset_domain": "domain", "asset_ip": "ip", "asset_wih": "content",
     "url": "url", "cip": "cidr_ip", "wih": "content",
+    "dirsearch_result": "url",
 }
 
 

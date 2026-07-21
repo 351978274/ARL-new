@@ -31,6 +31,9 @@ class PortScan:
         self.min_rate = port_min_rate if port_min_rate else 64
         self.exclude_ports = exclude_ports
 
+        # 全端口扫描：port_all.txt 为 1-65535（端口 0 不可扫），历史常量为 0-65535，两者均触发优化分支
+        is_full_range = self.ports in ("0-65535", "1-65535")
+
         if service_detect:
             self.host_timeout += 60 * 5
             self.nmap_arguments += " -sV"
@@ -42,10 +45,10 @@ class PortScan:
             self.nmap_arguments += f" -PE -PS{self.alive_port}"
             self.max_retries = 2
         else:
-            if self.ports != "0-65535":
+            if not is_full_range:
                 self.nmap_arguments += " -Pn"
 
-        if self.ports == "0-65535":
+        if is_full_range:
             self.max_host_group = 2
             self.min_rate = max(self.min_rate, 800)
             self.parallelism = max(self.parallelism, 128)

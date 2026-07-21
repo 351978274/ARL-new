@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import time
 
+from ..config import Config
 from ..database import conn_db
 from ..logger import get_logger
-from ..modules import ScanPortType, TaskStatus
+from ..modules import ScanPortType, TaskStatus, load_port_list
 from ..services import (fetch_cert as fetchCert, run_risk_cruising, run_sniffer)
 from ..services.base_update_task import BaseUpdateTask
 from ..services.common_task import CommonTask, WebSiteFetch
@@ -61,7 +62,8 @@ class IPTask(CommonTask):
         scan_port_map = {
             "test": ScanPortType.TEST, "top100": ScanPortType.TOP100,
             "top1000": ScanPortType.TOP1000, "all": ScanPortType.ALL,
-            "custom": self.options.get("port_custom", "80,443"),
+            "custom": self.options.get("port_custom")
+                      or load_port_list(Config.PORT_DICT_CUSTOM, "80,443"),
         }
         option_scan_port_type = self.options.get("port_scan_type", "test")
         scan_port_option = {

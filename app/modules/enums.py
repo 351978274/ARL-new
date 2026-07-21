@@ -8,11 +8,33 @@ from __future__ import annotations
 from ..config import Config, ScanPortPresets
 
 
+def load_port_list(path: str, fallback: str) -> str:
+    """从端口字典文件加载端口列表，逗号拼接为 nmap 可接受的字符串。
+
+    文件每行一个端口或范围（如 ``8080-8090``）。文件缺失/读取失败/为空时
+    返回 ``fallback``（对应 ``ScanPortPresets`` 硬编码值），保证扫描始终可用。
+    """
+    if not path:
+        return fallback
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            ports = [line.strip() for line in f if line.strip()]
+    except OSError:
+        return fallback
+    return ",".join(ports) if ports else fallback
+
+
 class ScanPortType:
-    TEST = ScanPortPresets.TOP_10
-    TOP100 = ScanPortPresets.TOP_100
-    TOP1000 = ScanPortPresets.TOP_1000
-    ALL = ScanPortPresets.ALL
+    """端口扫描预设。
+
+    优先从 ``Config.PORT_DICT_*`` 指向的字典文件读取（可经 config.yaml
+    ``ARL.PORT_DICT_*`` 覆盖）；文件缺失或为空时回退到 ``ScanPortPresets``
+    硬编码常量，与原 ARL 行为一致。
+    """
+    TEST = load_port_list(Config.PORT_DICT_TEST, ScanPortPresets.TOP_10)
+    TOP100 = load_port_list(Config.PORT_DICT_TOP100, ScanPortPresets.TOP_100)
+    TOP1000 = load_port_list(Config.PORT_DICT_TOP1000, ScanPortPresets.TOP_1000)
+    ALL = load_port_list(Config.PORT_DICT_ALL, ScanPortPresets.ALL)
 
 
 class DomainDictType:

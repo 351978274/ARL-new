@@ -61,6 +61,15 @@
             <el-menu-item index="/github_monitor_result">Github 监控结果</el-menu-item>
           </el-sub-menu>
 
+          <!-- 工具 -->
+          <el-sub-menu index="tools-group">
+            <template #title>
+              <el-icon><Tools /></el-icon><span>工具</span>
+            </template>
+            <el-menu-item index="/dirsearch">dirsearch 扫描</el-menu-item>
+            <el-menu-item index="/dirsearch_result">dirsearch 结果</el-menu-item>
+          </el-sub-menu>
+
           <!-- 系统 -->
           <el-sub-menu index="system-group">
             <template #title>

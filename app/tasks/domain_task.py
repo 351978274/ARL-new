@@ -18,7 +18,7 @@ from ..dns_query_plugin.base import run_query_plugin
 from ..helpers.domain import find_private_domain_by_task_id, find_public_ip_by_task_id
 from ..logger import get_logger
 from ..modules import (CollectSource, DomainDictType, DomainInfo, IPInfo, PortInfo,
-                       ScanPortType, TaskStatus)
+                       ScanPortType, TaskStatus, load_port_list)
 from ..services import (find_vhost, run_risk_cruising, run_sniffer)
 from ..services import (build_domain_info, check_http, domain_site_update,
                         page_fetch, port_scan, probe_http, search_engines)
@@ -322,7 +322,8 @@ class DomainTask(CommonTask):
 
         scan_port_map = {"test": ScanPortType.TEST, "top100": ScanPortType.TOP100,
                          "top1000": ScanPortType.TOP1000, "all": ScanPortType.ALL,
-                         "custom": self.options.get("port_custom", "80,443")}
+                         "custom": self.options.get("port_custom")
+                                   or load_port_list(Config.PORT_DICT_CUSTOM, "80,443")}
         option_scan_port_type = self.options.get("port_scan_type", "test")
         self.scan_port_option = {
             "ports": scan_port_map.get(option_scan_port_type, ScanPortType.TEST),

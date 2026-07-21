@@ -39,6 +39,10 @@ const routes = [
       { path: 'github_result', name: 'GithubResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'Github 结果', collection: 'github_result' } },
       { path: 'github_monitor_result', name: 'GithubMonitorResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'Github 监控结果', collection: 'github_monitor_result' } },
 
+      // 工具
+      { path: 'dirsearch', name: 'Dirsearch', component: () => import('@/views/tools/Dirsearch.vue'), meta: { title: 'dirsearch 扫描' } },
+      { path: 'dirsearch_result', name: 'DirsearchResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'dirsearch 结果', collection: 'dirsearch_result' } },
+
       // 系统配置
       { path: 'policy', name: 'Policy', component: () => import('@/views/system/Policy.vue'), meta: { title: '策略管理' } },
       { path: 'fingerprint', name: 'Fingerprint', component: () => import('@/views/system/Fingerprint.vue'), meta: { title: '指纹' } },

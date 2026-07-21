@@ -92,3 +92,22 @@ export const consoleApi = {
 export const healthApi = {
   check: () => request.get('/api/health'),
 }
+
+// ============ dirsearch 目录爆破 ============
+export const dirsearchApi = {
+  // 任务
+  listTask: (params) => request.get('/api/dirsearch/task/', { params }),
+  addTask: (data) => request.post('/api/dirsearch/task/', data),
+  stopTask: (task_id) => request.get(`/api/dirsearch/task/stop/${task_id}`),
+  deleteTask: (task_ids) => request.post('/api/dirsearch/task/delete/', { task_ids }),
+  // 结果
+  listResult: (params) => request.get('/api/dirsearch/result/', { params }),
+  exportResult: (params) => request.get('/api/dirsearch/result/export/', { params, responseType: 'blob' }),
+  // 辅助
+  paramMeta: () => request.get('/api/dirsearch/param_meta/'),
+  siteList: (data) => request.post('/api/dirsearch/site_list/', data),
+  uploadUrls: (formData) =>
+    request.post('/api/dirsearch/upload_urls/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+}

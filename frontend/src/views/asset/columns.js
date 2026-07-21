@@ -218,6 +218,17 @@ export const COLLECTION_CONFIG = {
       { prop: 'update_date', label: '更新时间', width: 170 },
     ],
   },
+  dirsearch_result: {
+    title: 'dirsearch 结果',
+    columns: [
+      { prop: 'url', label: 'URL', minWidth: 320, copyable: true, link: true },
+      { prop: 'path', label: '路径', minWidth: 200 },
+      { prop: 'status_code', label: '状态码', width: 90 },
+      { prop: 'content_length', label: '长度', width: 100 },
+      { prop: 'redirect', label: '跳转', minWidth: 200 },
+      { prop: 'save_date', label: '发现时间', width: 160 },
+    ],
+  },
   task_schedule: {
     title: '计划任务',
     columns: [
