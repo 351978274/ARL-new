@@ -229,6 +229,69 @@ export const COLLECTION_CONFIG = {
       { prop: 'save_date', label: '发现时间', width: 160 },
     ],
   },
+  hydra_result: {
+    title: 'hydra 破解结果',
+    columns: [
+      { prop: 'host', label: '主机', minWidth: 180, copyable: true },
+      { prop: 'service', label: '服务', width: 120 },
+      { prop: 'login', label: '用户名', minWidth: 140, copyable: true },
+      { prop: 'password', label: '密码', minWidth: 160, copyable: true },
+      { prop: 'save_date', label: '发现时间', width: 160 },
+    ],
+  },
+  sqlmap_result: {
+    title: 'sqlmap 注入结果',
+    columns: [
+      { prop: 'target', label: '目标', minWidth: 220, copyable: true },
+      {
+        prop: 'vulnerable', label: '可注入', width: 90,
+        render: (row) => row.vulnerable ? '是' : '否',
+      },
+      { prop: 'parameter', label: '注入点', minWidth: 140 },
+      { prop: 'dbms', label: '数据库', minWidth: 140 },
+      { prop: 'current_db', label: '当前库', width: 130 },
+      { prop: 'current_user', label: '当前用户', minWidth: 140 },
+      { prop: 'techniques', label: '注入技术', minWidth: 200 },
+      { prop: 'payloads', label: 'Payload 示例', minWidth: 240 },
+      { prop: 'save_date', label: '发现时间', width: 160 },
+    ],
+  },
+  aircrack_result: {
+    title: 'aircrack-ng 破解结果',
+    columns: [
+      {
+        prop: 'cracked', label: '破解', width: 80,
+        render: (row) => row.cracked ? '是' : '否',
+      },
+      { prop: 'key', label: '密钥', minWidth: 220, copyable: true },
+      { prop: 'key_type', label: '密钥类型', width: 100 },
+      { prop: 'attack_mode', label: '攻击模式', width: 100, render: (row) => ({ '1': 'WEP', '2': 'WPA-PSK' }[row.attack_mode] || row.attack_mode || '-') },
+      { prop: 'essid', label: 'ESSID', minWidth: 140 },
+      { prop: 'bssid', label: 'BSSID', width: 160 },
+      { prop: 'capture_file', label: '抓包文件', minWidth: 180 },
+      { prop: 'wordlist', label: '字典', minWidth: 160 },
+      { prop: 'save_date', label: '发现时间', width: 160 },
+    ],
+  },
+  searchsploit_result: {
+    title: 'searchsploit 搜索结果',
+    columns: [
+      { prop: 'edb_id', label: 'EDB-ID', width: 90, copyable: true },
+      { prop: 'title', label: '标题', minWidth: 320, copyable: true, link: true, linkKey: 'url' },
+      { prop: 'source', label: '类型', width: 90, render: (row) => ({ exploit: 'exploit', shellcode: 'shellcode', paper: 'paper' }[row.source] || row.source) },
+      { prop: 'type', label: '分类', width: 100 },
+      { prop: 'platform', label: '平台', width: 110 },
+      { prop: 'codes', label: 'CVE/编码', minWidth: 160 },
+      { prop: 'date', label: '发布日期', width: 110 },
+      { prop: 'author', label: '作者', minWidth: 140 },
+      {
+        prop: 'verified', label: '已验证', width: 80,
+        render: (row) => row.verified ? '是' : '否',
+      },
+      { prop: 'path', label: '本地路径', minWidth: 240 },
+      { prop: 'save_date', label: '发现时间', width: 160 },
+    ],
+  },
   task_schedule: {
     title: '计划任务',
     columns: [

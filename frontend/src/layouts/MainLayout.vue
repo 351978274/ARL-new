@@ -68,6 +68,14 @@
             </template>
             <el-menu-item index="/dirsearch">dirsearch 扫描</el-menu-item>
             <el-menu-item index="/dirsearch_result">dirsearch 结果</el-menu-item>
+            <el-menu-item index="/hydra">hydra 爆破</el-menu-item>
+            <el-menu-item index="/hydra_result">hydra 结果</el-menu-item>
+            <el-menu-item index="/sqlmap">sqlmap 扫描</el-menu-item>
+            <el-menu-item index="/sqlmap_result">sqlmap 结果</el-menu-item>
+            <el-menu-item index="/aircrack">aircrack-ng 破解</el-menu-item>
+            <el-menu-item index="/aircrack_result">aircrack 结果</el-menu-item>
+            <el-menu-item index="/searchsploit">searchsploit 搜索</el-menu-item>
+            <el-menu-item index="/searchsploit_result">searchsploit 结果</el-menu-item>
           </el-sub-menu>
 
           <!-- 系统 -->

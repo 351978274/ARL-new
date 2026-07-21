@@ -26,6 +26,10 @@ EXPORT_FIELD_MAP = {
     "asset_domain": "domain", "asset_ip": "ip", "asset_wih": "content",
     "url": "url", "cip": "cidr_ip", "wih": "content",
     "dirsearch_result": "url",
+    "hydra_result": "host",
+    "sqlmap_result": "target",
+    "aircrack_result": "key",
+    "searchsploit_result": "edb_id",
 }
 
 

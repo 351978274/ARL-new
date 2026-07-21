@@ -42,6 +42,14 @@ const routes = [
       // 工具
       { path: 'dirsearch', name: 'Dirsearch', component: () => import('@/views/tools/Dirsearch.vue'), meta: { title: 'dirsearch 扫描' } },
       { path: 'dirsearch_result', name: 'DirsearchResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'dirsearch 结果', collection: 'dirsearch_result' } },
+      { path: 'hydra', name: 'Hydra', component: () => import('@/views/tools/Hydra.vue'), meta: { title: 'hydra 爆破' } },
+      { path: 'hydra_result', name: 'HydraResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'hydra 结果', collection: 'hydra_result' } },
+      { path: 'sqlmap', name: 'Sqlmap', component: () => import('@/views/tools/Sqlmap.vue'), meta: { title: 'sqlmap 扫描' } },
+      { path: 'sqlmap_result', name: 'SqlmapResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'sqlmap 结果', collection: 'sqlmap_result' } },
+      { path: 'aircrack', name: 'Aircrack', component: () => import('@/views/tools/Aircrack.vue'), meta: { title: 'aircrack-ng 破解' } },
+      { path: 'aircrack_result', name: 'AircrackResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'aircrack 结果', collection: 'aircrack_result' } },
+      { path: 'searchsploit', name: 'Searchsploit', component: () => import('@/views/tools/Searchsploit.vue'), meta: { title: 'searchsploit 搜索' } },
+      { path: 'searchsploit_result', name: 'SearchsploitResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'searchsploit 结果', collection: 'searchsploit_result' } },
 
       // 系统配置
       { path: 'policy', name: 'Policy', component: () => import('@/views/system/Policy.vue'), meta: { title: '策略管理' } },

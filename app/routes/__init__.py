@@ -15,6 +15,10 @@ from .task_fofa import router as task_fofa_router
 from .github_scheduler import router as github_scheduler_router
 from .image import console_router, image_router
 from .dirsearch import router as dirsearch_router
+from .hydra import router as hydra_router
+from .sqlmap import router as sqlmap_router
+from .aircrack import router as aircrack_router
+from .searchsploit import router as searchsploit_router
 from .generic import routers as generic_routers
 
 # 所有路由汇总
@@ -22,7 +26,8 @@ all_routers: list = [
     task_router, user_router, asset_scope_router, scheduler_router,
     fingerprint_router, policy_router, export_router, batch_router,
     task_fofa_router, github_scheduler_router, image_router, console_router,
-    dirsearch_router,
+    dirsearch_router, hydra_router, sqlmap_router, aircrack_router,
+    searchsploit_router,
     *generic_routers,
 ]
 

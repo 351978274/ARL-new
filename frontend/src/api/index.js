@@ -111,3 +111,77 @@ export const dirsearchApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 }
+
+// ============ hydra 网络登录爆破 ============
+export const hydraApi = {
+  // 任务
+  listTask: (params) => request.get('/api/hydra/task/', { params }),
+  addTask: (data) => request.post('/api/hydra/task/', data),
+  stopTask: (task_id) => request.get(`/api/hydra/task/stop/${task_id}`),
+  deleteTask: (task_ids) => request.post('/api/hydra/task/delete/', { task_ids }),
+  // 结果
+  listResult: (params) => request.get('/api/hydra/result/', { params }),
+  exportResult: (params) => request.get('/api/hydra/result/export/', { params, responseType: 'blob' }),
+  // 辅助
+  paramMeta: () => request.get('/api/hydra/param_meta/'),
+  services: () => request.get('/api/hydra/services/'),
+  uploadTargets: (formData) =>
+    request.post('/api/hydra/upload_targets/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+}
+
+// ============ sqlmap SQL 注入检测 ============
+export const sqlmapApi = {
+  // 任务
+  listTask: (params) => request.get('/api/sqlmap/task/', { params }),
+  addTask: (data) => request.post('/api/sqlmap/task/', data),
+  stopTask: (task_id) => request.get(`/api/sqlmap/task/stop/${task_id}`),
+  deleteTask: (task_ids) => request.post('/api/sqlmap/task/delete/', { task_ids }),
+  // 结果
+  listResult: (params) => request.get('/api/sqlmap/result/', { params }),
+  exportResult: (params) => request.get('/api/sqlmap/result/export/', { params, responseType: 'blob' }),
+  // 辅助
+  paramMeta: () => request.get('/api/sqlmap/param_meta/'),
+  uploadUrls: (formData) =>
+    request.post('/api/sqlmap/upload_urls/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+}
+
+// ============ aircrack-ng 无线密钥破解 ============
+export const aircrackApi = {
+  // 任务
+  listTask: (params) => request.get('/api/aircrack/task/', { params }),
+  addTask: (data) => request.post('/api/aircrack/task/', data),
+  stopTask: (task_id) => request.get(`/api/aircrack/task/stop/${task_id}`),
+  deleteTask: (task_ids) => request.post('/api/aircrack/task/delete/', { task_ids }),
+  // 结果
+  listResult: (params) => request.get('/api/aircrack/result/', { params }),
+  exportResult: (params) => request.get('/api/aircrack/result/export/', { params, responseType: 'blob' }),
+  // 辅助
+  paramMeta: () => request.get('/api/aircrack/param_meta/'),
+  uploadCapture: (formData) =>
+    request.post('/api/aircrack/upload_capture/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  listCaptures: (params) => request.get('/api/aircrack/captures/', { params }),
+}
+
+// ============ searchsploit Exploit-DB 搜索 ============
+export const searchsploitApi = {
+  // 任务
+  listTask: (params) => request.get('/api/searchsploit/task/', { params }),
+  addTask: (data) => request.post('/api/searchsploit/task/', data),
+  stopTask: (task_id) => request.get(`/api/searchsploit/task/stop/${task_id}`),
+  deleteTask: (task_ids) => request.post('/api/searchsploit/task/delete/', { task_ids }),
+  // 结果
+  listResult: (params) => request.get('/api/searchsploit/result/', { params }),
+  exportResult: (params) => request.get('/api/searchsploit/result/export/', { params, responseType: 'blob' }),
+  // 辅助
+  paramMeta: () => request.get('/api/searchsploit/param_meta/'),
+  uploadNmap: (formData) =>
+    request.post('/api/searchsploit/upload_nmap/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+}
