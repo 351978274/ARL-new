@@ -52,4 +52,13 @@ routers: list[APIRouter] = [
     make_readonly_router("github_result", "github_result", "Github结果"),
     make_readonly_router("github_monitor_result", "github_monitor_result", "Github监控结果"),
     make_readonly_router("task_schedule", "task_schedule", "计划任务"),
+    # 工具（dirsearch/hydra/sqlmap/aircrack/searchsploit）结果集合。
+    # 这些结果由各工具的 /api/<tool>/task/ 提交时写入，但前端 GenericList 按
+    # /api/<collection>/ 约定读取，所以这里统一注册只读路由指向同一集合名。
+    # 各工具也保留了 /api/<tool>/result/ 端点，二者等价。
+    make_readonly_router("dirsearch_result", "dirsearch_result", "dirsearch结果"),
+    make_readonly_router("hydra_result", "hydra_result", "hydra结果"),
+    make_readonly_router("sqlmap_result", "sqlmap_result", "sqlmap结果"),
+    make_readonly_router("aircrack_result", "aircrack_result", "aircrack结果"),
+    make_readonly_router("searchsploit_result", "searchsploit_result", "searchsploit结果"),
 ]
