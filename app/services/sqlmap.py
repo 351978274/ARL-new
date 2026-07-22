@@ -17,12 +17,11 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 from typing import Any
 
 from ..config import Config
 from ..logger import get_logger
-from ..utils import exec_system, random_choices
+from ..utils import check_tool_available, exec_system, random_choices
 
 logger = get_logger()
 
@@ -282,6 +281,7 @@ class SqlmapScan:
         self.bulk_file = os.path.join(tmp_path, f"sqlmap_target_{rand_str}.txt")
         # 自定义 outputDir，便于解析
         self.output_dir = os.path.join(tmp_path, f"sqlmap_out_{rand_str}")
+        self._bin_path = SQLMAP_BIN  # 探测成功后更新为绝对路径
 
     # ---------- 临时文件 ----------
     def _gen_bulk_file(self) -> None:
@@ -306,16 +306,13 @@ class SqlmapScan:
 
     # ---------- 探测 ----------
     def check_have_sqlmap(self) -> bool:
-        """探测 sqlmap 是否可用。"""
-        try:
-            pro = subprocess.run(
-                [SQLMAP_BIN, "--version"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
-            return pro.returncode == 0
-        except Exception as e:
-            logger.debug(str(e))
-            return False
+        """探测 sqlmap 是否可用（兼容 systemd 最小化 PATH + 非零退出码）。"""
+        ok, abs_path = check_tool_available(SQLMAP_BIN, ["--version"], ["-h"])
+        if ok and abs_path and "/" in abs_path:
+            self._bin_path = abs_path
+        else:
+            self._bin_path = SQLMAP_BIN
+        return ok
 
     # ---------- 命令拼装 ----------
     def _build_command(self) -> list[str]:
@@ -325,7 +322,7 @@ class SqlmapScan:
         - 多目标：-m <bulkfile>
         - 固定追加：--batch（非交互）、--output-dir、--random-agent（默认开）
         """
-        cmd: list[str] = [SQLMAP_BIN, "--batch",
+        cmd: list[str] = [self._bin_path, "--batch",
                           "--output-dir", self.output_dir]
 
         # 目标

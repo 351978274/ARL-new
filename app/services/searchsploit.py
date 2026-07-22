@@ -17,12 +17,11 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from typing import Any
 
 from ..config import Config
 from ..logger import get_logger
-from ..utils import check_output, random_choices
+from ..utils import check_output, check_tool_available, random_choices
 
 logger = get_logger()
 
@@ -74,19 +73,17 @@ class SearchsploitScan:
         rand_str = random_choices()
         # JSON 输出重定向到文件，便于解析
         self.output_path = os.path.join(tmp_path, f"searchsploit_out_{rand_str}.json")
+        self._bin_path = SEARCHSPLOIT_BIN  # 探测成功后更新为绝对路径
 
     # ---------- 探测 ----------
     def check_have_searchsploit(self) -> bool:
-        """探测 searchsploit 是否可用。"""
-        try:
-            pro = subprocess.run(
-                [SEARCHSPLOIT_BIN, "-h"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
-            return pro.returncode == 0
-        except Exception as e:
-            logger.debug(str(e))
-            return False
+        """探测 searchsploit 是否可用（兼容 systemd 最小化 PATH + 非零退出码）。"""
+        ok, abs_path = check_tool_available(SEARCHSPLOIT_BIN, ["-h"], ["--help"])
+        if ok and abs_path and "/" in abs_path:
+            self._bin_path = abs_path
+        else:
+            self._bin_path = SEARCHSPLOIT_BIN
+        return ok
 
     # ---------- 命令拼装 ----------
     def _build_command(self) -> list[str]:
@@ -96,7 +93,7 @@ class SearchsploitScan:
         - -p/-m/-x/--nmap 等非搜索模式：直接执行对应操作，忽略 terms
         """
         # 固定参数：JSON 输出 + 禁用颜色（颜色转义会破坏 JSON 解析）
-        cmd: list[str] = [SEARCHSPLOIT_BIN, "-j", "--disable-colour"]
+        cmd: list[str] = [self._bin_path, "-j", "--disable-colour"]
 
         # 布尔开关
         for key, flag in _BOOL_FLAGS.items():
@@ -173,10 +170,15 @@ class SearchsploitScan:
             for item in data.get(source_key, []) or []:
                 if not isinstance(item, dict):
                     continue
+                # searchsploit -j 真实字段名（含空格）：
+                #   "Exploit Title", "EDB-ID", "Date", "Author", "Type",
+                #   "Platform", "Path", "Codes", "Verified"
+                # 兼容多种写法，避免字段名差异导致空值
                 results.append({
                     "source": source_label,
-                    "edb_id": str(item.get("EDB-ID", "")),
-                    "title": item.get("Exploit", "") or item.get("Title", ""),
+                    "edb_id": str(item.get("EDB-ID", "") or item.get("edb-id", "")),
+                    "title": (item.get("Exploit Title", "") or item.get("Exploit", "")
+                              or item.get("Title", "")),
                     "date": item.get("Date", ""),
                     "author": item.get("Author", ""),
                     "type": item.get("Type", ""),

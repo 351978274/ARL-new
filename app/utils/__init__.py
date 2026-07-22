@@ -66,11 +66,13 @@ from .cert import get_cert, parse_certs
 from .system_util import (
     build_port_custom,
     check_output,
+    check_tool_available,
     exec_system,
     gen_filename,
     gen_md5,
     is_valid_exclude_ports,
     random_choices,
+    tool_subprocess_env,
     truncate_string,
 )
 

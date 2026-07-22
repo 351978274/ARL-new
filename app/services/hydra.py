@@ -17,12 +17,11 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 from typing import Any
 
 from ..config import Config, DICTS_DIR
 from ..logger import get_logger
-from ..utils import exec_system, random_choices
+from ..utils import check_tool_available, exec_system, random_choices
 
 logger = get_logger()
 
@@ -107,6 +106,7 @@ class HydraScan:
         self.target_file = os.path.join(tmp_path, f"hydra_target_{rand_str}.txt")
         # -o 输出文件（同时用 -b jsonv1 解析）
         self.output_path = os.path.join(tmp_path, f"hydra_output_{rand_str}.json")
+        self._bin_path = HYDRA_BIN  # 探测成功后更新为绝对路径
 
     # ---------- 临时文件 ----------
     def _gen_target_file(self) -> None:
@@ -125,16 +125,13 @@ class HydraScan:
 
     # ---------- 探测 ----------
     def check_have_hydra(self) -> bool:
-        """探测 hydra 是否可用。"""
-        try:
-            pro = subprocess.run(
-                [HYDRA_BIN, "-h"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
-            return pro.returncode == 0 or pro.returncode == 255  # hydra -h 退出码为 255
-        except Exception as e:
-            logger.debug(str(e))
-            return False
+        """探测 hydra 是否可用（兼容 systemd 最小化 PATH + 非零退出码）。"""
+        ok, abs_path = check_tool_available(HYDRA_BIN, ["-h"], ["--help"])
+        if ok and abs_path and "/" in abs_path:
+            self._bin_path = abs_path
+        else:
+            self._bin_path = HYDRA_BIN
+        return ok
 
     # ---------- 命令拼装 ----------
     def _build_command(self) -> list[str]:
@@ -144,7 +141,7 @@ class HydraScan:
         多目标：hydra [opts] -M target_file service
         结果固定写入 output_path（-o），并用 -b jsonv1 指定格式。
         """
-        cmd: list[str] = [HYDRA_BIN, "-o", self.output_path, "-b", "jsonv1"]
+        cmd: list[str] = [self._bin_path, "-o", self.output_path, "-b", "jsonv1"]
 
         # 布尔开关
         for key, flag in _BOOL_FLAGS.items():
@@ -202,8 +199,18 @@ class HydraScan:
     def dump_result(self) -> list[dict]:
         """解析 hydra 的 -b jsonv1 输出。
 
-        jsonv1 格式：[{"service","host","login","password"}, ...]
-        若 -o 文件不存在或解析失败，返回空列表。
+        hydra v9.x 的 jsonv1 实际是嵌套结构（源码 hydra.c:4062-4640）：
+            {
+              "generator": { "software":..., "service":..., "server":... },
+              "results": [
+                {"port":22, "service":"ssh", "host":"...", "login":"...", "password":"..."}
+              ],
+              "success": true,
+              "errormessages": [],
+              "quantityfound": 2
+            }
+        因此优先取 data["results"]。若顶层就是列表（向后兼容），直接用。
+        若 -o 文件不存在或 JSON 解析失败，回退到文本正则解析。
         """
         if not os.path.exists(self.output_path):
             return []
@@ -217,41 +224,65 @@ class HydraScan:
             # 兜底：用正则提取 host/login/password（旧版或混杂日志时）
             return self._parse_text_output(raw)
 
+        # 嵌套结构：取 generator 元数据 + results 数组
+        generator: dict = {}
+        creds: list = []
         if isinstance(data, dict):
-            data = [data]
-        if not isinstance(data, list):
+            generator = data.get("generator", {}) or {}
+            creds = data.get("results", []) or []
+        elif isinstance(data, list):
+            creds = data
+        else:
             return []
 
+        # generator 中可补全 service / server（target）
+        gen_service = generator.get("service", "") or self.options.get("service", "")
+        gen_host = generator.get("server", "") or self.options.get("target", "")
+
         results: list[dict] = []
-        for it in data:
+        for it in creds:
             if not isinstance(it, dict):
                 continue
+            port = it.get("port", 0)
+            try:
+                port = int(port)
+            except (TypeError, ValueError):
+                port = 0
             results.append({
-                "service": it.get("service", "") or self.options.get("service", ""),
-                "host": it.get("host", "") or self.options.get("target", ""),
-                "login": it.get("login", ""),
-                "password": it.get("password", ""),
+                "service": it.get("service", "") or gen_service,
+                "host": it.get("host", "") or gen_host,
+                "port": port,
+                "login": it.get("login", "") or "",
+                "password": it.get("password", "") or "",
             })
         return results
 
     @staticmethod
     def _parse_text_output(raw: str) -> list[dict]:
-        """从纯文本输出兜底解析（匹配 'host:port login: password' 行）。"""
+        """从纯文本输出兜底解析（匹配 '[port][service] host: x login: y password: z' 行）。"""
         results: list[dict] = []
-        # 例: [22][ssh] host: 1.2.3.4 login: root password: 123456
+        # 例: [22][ssh] host: 1.2.3.4   login: root   password: 123456
         pattern = re.compile(r"login:\s*(\S+)\s+password:\s*(\S+)")
         host_pattern = re.compile(r"host:\s*(\S+)")
-        service_pattern = re.compile(r"\[(\d+)\]\[([^\]]+)\]")
+        # 同时捕获 port 和 service
+        svc_pattern = re.compile(r"\[(\d+)\]\[([^\]]+)\]")
         for line in raw.splitlines():
             m = pattern.search(line)
             if not m:
                 continue
             login, password = m.group(1), m.group(2)
             host_m = host_pattern.search(line)
-            svc_m = service_pattern.search(line)
+            svc_m = svc_pattern.search(line)
+            port = 0
+            if svc_m:
+                try:
+                    port = int(svc_m.group(1))
+                except (TypeError, ValueError):
+                    port = 0
             results.append({
                 "service": svc_m.group(2) if svc_m else "",
                 "host": host_m.group(1) if host_m else "",
+                "port": port,
                 "login": login,
                 "password": password,
             })

@@ -16,16 +16,16 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from typing import Any
 
 from ..config import Config
 from ..logger import get_logger
-from ..utils import exec_system, random_choices
+from ..utils import check_tool_available, exec_system, random_choices
 
 logger = get_logger()
 
 # dirsearch 可执行文件名（按 PATH 解析；如需固定路径可在 config.yaml 增配）
+# 启动时一次性探测真实路径，避免运行时每次重新查找
 DIRSEARCH_BIN = os.environ.get("DIRSEARCH_BIN", "dirsearch")
 
 # 布尔型参数：勾选即追加 flag
@@ -73,6 +73,7 @@ class DirSearch:
         rand_str = random_choices()
         self.target_path = os.path.join(tmp_path, f"dirsearch_target_{rand_str}.txt")
         self.result_path = os.path.join(tmp_path, f"dirsearch_result_{rand_str}.json")
+        self._bin_path = DIRSEARCH_BIN  # 探测成功后更新为绝对路径
 
     # ---------- 临时文件 ----------
     def _gen_target_file(self) -> None:
@@ -90,16 +91,14 @@ class DirSearch:
 
     # ---------- 探测 ----------
     def check_have_dirsearch(self) -> bool:
-        """探测 dirsearch 是否可用。"""
-        try:
-            pro = subprocess.run(
-                [DIRSEARCH_BIN, "--version"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
-            return pro.returncode == 0
-        except Exception as e:
-            logger.debug(str(e))
-            return False
+        """探测 dirsearch 是否可用（兼容 systemd 最小化 PATH + 非零退出码）。"""
+        ok, abs_path = check_tool_available(DIRSEARCH_BIN, ["--version"], ["--help"])
+        # 缓存解析到的绝对路径，后续 exec 直接用，避免再次 PATH 查找失败
+        if ok and abs_path and "/" in abs_path:
+            self._bin_path = abs_path
+        else:
+            self._bin_path = DIRSEARCH_BIN
+        return ok
 
     # ---------- 命令拼装 ----------
     def _build_command(self) -> list[str]:
@@ -109,7 +108,7 @@ class DirSearch:
         - 带值参数：值非空才追加 `flag value`
         - 固定追加：-l 目标文件、--format json、-o 结果文件、--full-url
         """
-        cmd: list[str] = [DIRSEARCH_BIN, "-l", self.target_path,
+        cmd: list[str] = [self._bin_path, "-l", self.target_path,
                           "--format", "json", "-o", self.result_path, "--full-url"]
 
         for key, flag in _BOOL_FLAGS.items():
@@ -144,10 +143,18 @@ class DirSearch:
 
     # ---------- 结果解析 ----------
     def dump_result(self) -> list[dict]:
-        """解析 dirsearch 的 JSON 输出。
+        """解析 dirsearch 的 --format json 输出。
 
-        dirsearch --format json 会输出一个 JSON 数组（每条结果为一对象），
-        兼容历史版本可能的「每行一个 JSON 对象」格式。
+        dirsearch v0.4.x 的 JSON 输出是嵌套结构（源码 lib/report/json_report.py）：
+            {
+              "info": {"args": "...", "time": "..."},
+              "results": [
+                {"url":"...", "status":200, "contentLength":1234,
+                 "contentType":"...", "redirect":"..."}
+              ]
+            }
+        因此优先取 data["results"]。若顶层就是列表（向后兼容），直接用。
+        若 JSON 解析失败，回退到 JSONL 逐行解析。
         """
         if not os.path.exists(self.result_path):
             return []
@@ -156,22 +163,26 @@ class DirSearch:
         if not raw:
             return []
 
+        # 优先按完整 JSON 解析
         items: list[dict] = []
-        # 优先按 JSON 数组解析
         try:
             data = json.loads(raw)
-            if isinstance(data, list):
+            if isinstance(data, dict):
+                # 嵌套结构：取 results 数组（dirsearch v0.4.x 真实格式）
+                items = data.get("results", []) or []
+            elif isinstance(data, list):
+                # 扁平数组（向后兼容）
                 items = data
-            elif isinstance(data, dict):
-                items = [data]
         except json.JSONDecodeError:
-            # 兼容 JSONL：逐行解析
+            # 兜底：JSONL 逐行解析
             for line in raw.splitlines():
                 line = line.strip()
                 if not line:
                     continue
                 try:
-                    items.append(json.loads(line))
+                    parsed = json.loads(line)
+                    if isinstance(parsed, dict):
+                        items.append(parsed)
                 except json.JSONDecodeError:
                     continue
 
@@ -179,11 +190,30 @@ class DirSearch:
         for it in items:
             if not isinstance(it, dict):
                 continue
+            url = it.get("url", "") or ""
+            # dirsearch 无独立 path 字段，从 url 提取路径部分
+            path = it.get("path", "")
+            if not path and url:
+                try:
+                    from urllib.parse import urlparse
+                    path = urlparse(url).path or "/"
+                except Exception:
+                    path = ""
+            # 字段映射：dirsearch 用 status/contentLength，我们统一为 status_code/content_length
+            try:
+                status_code = int(it.get("status") or it.get("status_code") or 0)
+            except (TypeError, ValueError):
+                status_code = 0
+            try:
+                content_length = int(it.get("contentLength") or it.get("content-length")
+                                     or it.get("length") or 0)
+            except (TypeError, ValueError):
+                content_length = 0
             results.append({
-                "url": it.get("url", ""),
-                "path": it.get("path", ""),
-                "status_code": int(it.get("status") or it.get("status_code") or 0),
-                "content_length": int(it.get("length") or it.get("content-length") or 0),
+                "url": url,
+                "path": path,
+                "status_code": status_code,
+                "content_length": content_length,
                 "redirect": it.get("redirect", "") or "",
             })
         return results

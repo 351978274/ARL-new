@@ -15,12 +15,11 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 from typing import Any
 
 from ..config import Config, DICTS_DIR
 from ..logger import get_logger
-from ..utils import exec_system, random_choices
+from ..utils import check_tool_available, exec_system, random_choices
 
 logger = get_logger()
 
@@ -104,19 +103,17 @@ class AircrackScan:
         self.key_file = os.path.join(tmp_path, f"aircrack_key_{rand_str}.txt")
         # stdout 重定向到日志文件，便于解析
         self.stdout_file = os.path.join(tmp_path, f"aircrack_stdout_{rand_str}.log")
+        self._bin_path = AIRCRACK_BIN  # 探测成功后更新为绝对路径
 
     # ---------- 探测 ----------
     def check_have_aircrack(self) -> bool:
-        """探测 aircrack-ng 是否可用。"""
-        try:
-            pro = subprocess.run(
-                [AIRCRACK_BIN, "--help"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
-            return pro.returncode == 0
-        except Exception as e:
-            logger.debug(str(e))
-            return False
+        """探测 aircrack-ng 是否可用（兼容 systemd 最小化 PATH + 非零退出码）。"""
+        ok, abs_path = check_tool_available(AIRCRACK_BIN, ["--help"], ["--version"])
+        if ok and abs_path and "/" in abs_path:
+            self._bin_path = abs_path
+        else:
+            self._bin_path = AIRCRACK_BIN
+        return ok
 
     # ---------- 命令拼装 ----------
     def _build_command(self) -> list[str]:
@@ -125,7 +122,7 @@ class AircrackScan:
         - 固定追加：-l <keyfile>（破解成功后写入）
         - 抓包文件作为最后一个位置参数
         """
-        cmd: list[str] = [AIRCRACK_BIN, "-l", self.key_file]
+        cmd: list[str] = [self._bin_path, "-l", self.key_file]
 
         # 布尔开关
         for key, flag in _BOOL_FLAGS.items():

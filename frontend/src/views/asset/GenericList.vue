@@ -76,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onActivated, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { Search, Download, RefreshRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -97,6 +97,8 @@ const hasScopeId = computed(() => ['asset_domain', 'asset_ip', 'asset_site', 'as
 const hasCopyField = computed(() => config.value.columns.some((c) => c.copyable))
 
 async function loadData() {
+  // collection 可能短暂为 undefined（keep-alive 切换瞬间），防御一下
+  if (!collection.value) return
   loading.value = true
   try {
     const params = { page: query.page, size: query.size }
@@ -143,7 +145,31 @@ async function copyRow(row) {
   } catch (e) { ElMessage.warning('复制失败') }
 }
 
-// 路由切换或集合变化时重新加载
-watch(() => route.path, loadData)
+// 重置过滤条件（切换 collection 时调用）
+function resetFilters() {
+  query.page = 1
+  query.task_id = route.query.task_id || ''
+  query.scope_id = route.query.scope_id || ''
+  query.keyword = ''
+}
+
+// 关键修复：keep-alive 下，同一 GenericList 组件在不同 collection 路由间复用，
+// 必须监听 collection 本身（而非 route.path），并在切换时重置条件 + 重新加载。
+// nextTick 确保 route.meta 已更新到新值后再读 config。
+watch(collection, () => {
+  resetFilters()
+  nextTick(loadData)
+})
+
+// keep-alive 重新激活时（从其它页面切回来），若 query 参数变了也要重载
+onActivated(() => {
+  const tid = route.query.task_id
+  const sid = route.query.scope_id
+  if ((tid && tid !== query.task_id) || (sid && sid !== query.scope_id)) {
+    resetFilters()
+    loadData()
+  }
+})
+
 onMounted(loadData)
 </script>

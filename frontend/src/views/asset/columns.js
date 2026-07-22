@@ -233,6 +233,7 @@ export const COLLECTION_CONFIG = {
     title: 'hydra 破解结果',
     columns: [
       { prop: 'host', label: '主机', minWidth: 180, copyable: true },
+      { prop: 'port', label: '端口', width: 80 },
       { prop: 'service', label: '服务', width: 120 },
       { prop: 'login', label: '用户名', minWidth: 140, copyable: true },
       { prop: 'password', label: '密码', minWidth: 160, copyable: true },
