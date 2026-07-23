@@ -34,12 +34,15 @@
                   </el-checkbox>
                 </el-tooltip>
                 <!-- 带值参数：勾选后显示输入框 -->
-                <el-input v-if="p.type !== 'bool' && enabled[p.key]"
-                          v-model="values[p.key]"
-                          :placeholder="p.desc"
-                          size="small"
-                          :type="p.type === 'int' || p.type === 'float' ? 'number' : 'text'"
-                          style="width: 200px; margin-left: 8px" />
+                <div v-if="p.type !== 'bool' && enabled[p.key]" class="param-value-row">
+                  <el-input v-model="values[p.key]"
+                            :placeholder="p.desc"
+                            size="small"
+                            :type="p.type === 'int' || p.type === 'float' ? 'number' : 'text'"
+                            style="width: 200px" />
+                  <el-button v-if="p.file" :icon="Folder" size="small"
+                             @click="openPicker(p.key)" title="选择文件" />
+                </div>
               </div>
             </div>
           </div>
@@ -67,20 +70,41 @@
         <el-button type="primary" @click="confirmSitePicker">加入目标 ({{ selectedSites.length }})</el-button>
       </div>
     </el-drawer>
+
+    <!-- 文件路径选择器 -->
+    <FilePicker v-model="filePickerVisible" :title="filePickerTitle"
+                @select="onFilePicked" />
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { Search, Upload } from '@element-plus/icons-vue'
+import { Search, Upload, Folder } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { dirsearchApi } from '@/api'
+import FilePicker from '@/components/FilePicker.vue'
 
 const props = defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'created'])
 
 const submitting = ref(false)
 const paramMeta = ref([])
+
+// 文件路径选择器
+const filePickerVisible = ref(false)
+const filePickerTitle = ref('选择文件')
+const filePickerTargetKey = ref('')
+function openPicker(key) {
+  filePickerTargetKey.value = key
+  const meta = paramMeta.value.find((p) => p.key === key)
+  filePickerTitle.value = `选择文件 - ${meta ? meta.name : key}`
+  filePickerVisible.value = true
+}
+function onFilePicked(path) {
+  if (filePickerTargetKey.value) {
+    values[filePickerTargetKey.value] = path
+  }
+}
 
 const defaultForm = () => ({
   name: '',
@@ -256,5 +280,11 @@ async function onSubmit() {
   color: #909399;
   font-family: monospace;
   font-size: 12px;
+}
+.param-value-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
 }
 </style>

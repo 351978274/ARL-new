@@ -36,8 +36,11 @@ class MassDNS:
         logger.info(f"MassDNS dict {cnt}")
 
     async def mass_dns(self):
-        command = [self.mass_dns_bin, "-q", f"-r {self.dns_server}", "-o S",
-                   f"-w {self.mass_dns_output_path}", f"-s {self.concurrent}",
+        # 注意：exec_system 走 subprocess.run(list) 不做 shell 分词，
+        # flag 与值必须拆成独立的 argv 元素，否则 massdns 报 unknown flag 且不产出结果。
+        # concurrent 为 int，argv 必须是 str，故显式转换。
+        command = [self.mass_dns_bin, "-q", "-r", self.dns_server, "-o", "S",
+                   "-w", self.mass_dns_output_path, "-s", str(self.concurrent),
                    self.domain_gen_output_path, "--root"]
         logger.info(" ".join(command))
         await exec_system(command, timeout=5 * 24 * 60 * 60)

@@ -40,8 +40,12 @@
                   </el-checkbox>
                 </el-tooltip>
                 <div v-if="p.type !== 'bool' && enabled[p.key]" class="param-input">
-                  <el-input v-model="values[p.key]" :placeholder="p.desc"
-                            size="small" style="width: 220px" />
+                  <div class="param-value-row">
+                    <el-input v-model="values[p.key]" :placeholder="p.desc"
+                              size="small" style="width: 220px" />
+                    <el-button v-if="p.file" :icon="Folder" size="small"
+                               @click="openPicker(p.key)" title="选择文件" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -54,20 +58,41 @@
       <el-button @click="$emit('update:modelValue', false)">取消</el-button>
       <el-button type="primary" :loading="submitting" @click="onSubmit">开始搜索</el-button>
     </template>
+
+    <!-- 文件路径选择器 -->
+    <FilePicker v-model="filePickerVisible" :title="filePickerTitle"
+                @select="onFilePicked" />
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { Upload, Document, Close } from '@element-plus/icons-vue'
+import { Upload, Document, Close, Folder } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { searchsploitApi } from '@/api'
+import FilePicker from '@/components/FilePicker.vue'
 
 const props = defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'created'])
 
 const submitting = ref(false)
 const paramMeta = ref([])
+
+// 文件路径选择器
+const filePickerVisible = ref(false)
+const filePickerTitle = ref('选择文件')
+const filePickerTargetKey = ref('')
+function openPicker(key) {
+  filePickerTargetKey.value = key
+  const meta = paramMeta.value.find((p) => p.key === key)
+  filePickerTitle.value = `选择文件 - ${meta ? meta.name : key}`
+  filePickerVisible.value = true
+}
+function onFilePicked(path) {
+  if (filePickerTargetKey.value) {
+    values[filePickerTargetKey.value] = path
+  }
+}
 
 const defaultForm = () => ({ name: '', termsText: '', nmapFile: '', nmapFilename: '' })
 const form = reactive(defaultForm())
@@ -218,5 +243,10 @@ async function onSubmit() {
   color: #909399;
   font-family: monospace;
   font-size: 12px;
+}
+.param-value-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>

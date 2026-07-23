@@ -92,7 +92,7 @@ const list = ref([])
 const total = ref(0)
 const query = reactive({ page: 1, size: 20, task_id: '', scope_id: '', keyword: '' })
 
-const hasTaskId = computed(() => ['domain', 'site', 'ip', 'url', 'cip', 'cert', 'service', 'vuln', 'fileleak', 'poc', 'stat_finger', 'npoc_service', 'nuclei_result', 'wih', 'dirsearch_result', 'hydra_result', 'sqlmap_result', 'aircrack_result', 'searchsploit_result', 'github_task', 'github_result', 'github_monitor_result'].includes(collection.value))
+const hasTaskId = computed(() => ['domain', 'site', 'ip', 'url', 'cip', 'cert', 'service', 'vuln', 'fileleak', 'poc', 'stat_finger', 'npoc_service', 'nuclei_result', 'wih', 'dirsearch_result', 'hydra_result', 'sqlmap_result', 'aircrack_result', 'searchsploit_result', 'hashcat_result', 'github_task', 'github_result', 'github_monitor_result'].includes(collection.value))
 const hasScopeId = computed(() => ['asset_domain', 'asset_ip', 'asset_site', 'asset_wih'].includes(collection.value))
 const hasCopyField = computed(() => config.value.columns.some((c) => c.copyable))
 

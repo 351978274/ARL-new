@@ -19,6 +19,8 @@ from .hydra import router as hydra_router
 from .sqlmap import router as sqlmap_router
 from .aircrack import router as aircrack_router
 from .searchsploit import router as searchsploit_router
+from .hashcat import router as hashcat_router
+from .file_browser import router as file_router
 from .generic import routers as generic_routers
 
 # 所有路由汇总
@@ -27,7 +29,7 @@ all_routers: list = [
     fingerprint_router, policy_router, export_router, batch_router,
     task_fofa_router, github_scheduler_router, image_router, console_router,
     dirsearch_router, hydra_router, sqlmap_router, aircrack_router,
-    searchsploit_router,
+    searchsploit_router, hashcat_router, file_router,
     *generic_routers,
 ]
 

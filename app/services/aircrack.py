@@ -251,14 +251,16 @@ PARAM_META: list[dict[str, Any]] = [
     # 字典
     {"group": "字典设置", "key": "wordlist", "flag": "-w", "name": "密码字典",
      "desc": "字典文件路径（多个用逗号分隔），WPA 破解必填", "type": "str",
-     "default": DEFAULT_WORDLIST},
+     "default": DEFAULT_WORDLIST, "file": True},
     {"group": "字典设置", "key": "airolib_db", "flag": "-r", "name": "airolib 数据库",
-     "desc": "airolib-ng PMK 数据库路径（不能与 -w 同用，加速 WPA 破解）", "type": "str", "default": ""},
+     "desc": "airolib-ng PMK 数据库路径（不能与 -w 同用，加速 WPA 破解）", "type": "str",
+     "default": "", "file": True},
     # 会话
     {"group": "会话管理", "key": "new_session", "flag": "-N", "name": "新建会话文件",
-     "desc": "将本次破解进度保存为新的会话文件（便于断点续跑）", "type": "str", "default": ""},
+     "desc": "将本次破解进度保存为新的会话文件（便于断点续跑）", "type": "str",
+     "default": "", "file": True},
     {"group": "会话管理", "key": "restore_session", "flag": "-R", "name": "恢复会话文件",
-     "desc": "从已有会话文件恢复破解", "type": "str", "default": ""},
+     "desc": "从已有会话文件恢复破解", "type": "str", "default": "", "file": True},
     # Static WEP
     {"group": "WEP 设置", "key": "nbits", "flag": "-n", "name": "WEP 密钥长度",
      "desc": "WEP 密钥长度：64/128/152/256/512", "type": "int", "default": 128},

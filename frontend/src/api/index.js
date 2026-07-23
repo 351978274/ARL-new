@@ -185,3 +185,30 @@ export const searchsploitApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 }
+
+// ============ hashcat 密码哈希恢复 ============
+export const hashcatApi = {
+  // 任务
+  listTask: (params) => request.get('/api/hashcat/task/', { params }),
+  addTask: (data) => request.post('/api/hashcat/task/', data),
+  stopTask: (task_id) => request.get(`/api/hashcat/task/stop/${task_id}`),
+  deleteTask: (task_ids) => request.post('/api/hashcat/task/delete/', { task_ids }),
+  // 结果
+  listResult: (params) => request.get('/api/hashcat/result/', { params }),
+  exportResult: (params) => request.get('/api/hashcat/result/export/', { params, responseType: 'blob' }),
+  // 辅助
+  paramMeta: () => request.get('/api/hashcat/param_meta/'),
+  uploadHash: (formData) =>
+    request.post('/api/hashcat/upload_hash/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  listHashes: (params) => request.get('/api/hashcat/hashes/', { params }),
+}
+
+// ============ 文件浏览（工具参数文件路径选择器） ============
+export const fileApi = {
+  // 列出目录内容
+  listDir: (path) => request.get('/api/file/list/', { params: { path } }),
+  // 可浏览根目录列表（项目根 + 系统盘符/根）
+  roots: () => request.get('/api/file/roots/'),
+}

@@ -1,21 +1,45 @@
 <template>
   <el-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)"
-             title="新建 sqlmap 扫描" width="1000px" top="5vh" :close-on-click-modal="false">
+             title="新建 hashcat 恢复" width="1000px" top="5vh" :close-on-click-modal="false">
     <el-form :model="form" label-width="110px" label-position="right">
       <el-row :gutter="20">
-        <!-- 左侧：目标 -->
+        <!-- 左侧：任务名 + 哈希文件 + 字典/掩码 -->
         <el-col :span="12">
           <el-form-item label="任务名称" required>
             <el-input v-model="form.name" placeholder="请输入任务名称" />
           </el-form-item>
-          <el-form-item label="目标 URL" required>
-            <el-input v-model="form.targetsText" type="textarea" :rows="8"
-                      placeholder="每行一个 URL，建议带参数，如&#10;http://example.com/page?id=1" />
-            <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center">
-              <el-upload :show-file-list="false" :before-upload="onUploadFile" accept=".txt">
-                <el-button size="small" :icon="Upload">上传 URL 文件</el-button>
-              </el-upload>
-              <span style="color: #909399; font-size: 12px">共 {{ targets.length }} 个</span>
+          <el-form-item label="哈希文件" required>
+            <el-upload
+              :show-file-list="false"
+              :before-upload="onUploadHash"
+              accept=".txt,.hash,.hashes,.lst,.list,.hccapx,.hccap"
+              drag
+              style="width: 100%"
+            >
+              <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+              <div class="el-upload__text">
+                拖拽哈希文件到此处，或<em>点击上传</em>
+              </div>
+              <template #tip>
+                <div style="font-size: 12px; color: #909399; padding: 0 12px">
+                  每行一个哈希（支持 hash:salt / user:hash 格式）
+                </div>
+              </template>
+            </el-upload>
+            <div v-if="form.hashFile" class="file-info">
+              <el-icon><Document /></el-icon>
+              <span>{{ form.hashFilename }}</span>
+              <span style="color: #909399; margin-left: 8px">{{ formatSize(form.hashSize) }}</span>
+              <el-button link type="danger" :icon="Close" @click="clearHash" />
+            </div>
+            <div style="margin-top: 6px">
+              <el-button size="small" :icon="Files" @click="hashPickerVisible = true">从已上传选择</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="字典/掩码">
+            <el-input v-model="form.wordlist" placeholder="字典路径或掩码，如 /tmp/rockyou.txt 或 ?a?a?a?a?a?a" />
+            <div style="margin-top: 4px; color: #909399; font-size: 12px">
+              字典模式(-a 0)填路径；掩码模式(-a 3)填掩码
             </div>
           </el-form-item>
         </el-col>
@@ -32,7 +56,6 @@
                     <span class="param-flag">{{ p.flag }}</span>
                   </el-checkbox>
                 </el-tooltip>
-                <!-- 带值参数：勾选后显示对应控件 -->
                 <div v-if="p.type !== 'bool' && enabled[p.key]" class="param-input">
                   <el-input-number v-if="p.type === 'int'" v-model="numValues[p.key]"
                                    :min="0" controls-position="right" size="small" style="width: 200px" />
@@ -52,8 +75,24 @@
 
     <template #footer>
       <el-button @click="$emit('update:modelValue', false)">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="onSubmit">开始扫描</el-button>
+      <el-button type="primary" :loading="submitting" @click="onSubmit">开始恢复</el-button>
     </template>
+
+    <!-- 已上传哈希文件选择抽屉 -->
+    <el-drawer v-model="hashPickerVisible" title="从已上传哈希文件选择" size="600px" direction="rtl">
+      <el-table :data="hashes" v-loading="hashesLoading" border stripe height="400"
+                @current-change="onHashPick">
+        <el-table-column prop="filename" label="文件名" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="line_count" label="哈希数" width="80" />
+        <el-table-column label="大小" width="90">
+          <template #default="{ row }">{{ formatSize(row.size) }}</template>
+        </el-table-column>
+        <el-table-column prop="save_date" label="上传时间" width="160" />
+      </el-table>
+      <div style="margin-top: 10px; text-align: right">
+        <el-button type="primary" :disabled="!pickedHash" @click="confirmHashPick">使用该文件</el-button>
+      </div>
+    </el-drawer>
 
     <!-- 文件路径选择器 -->
     <FilePicker v-model="filePickerVisible" :title="filePickerTitle"
@@ -63,13 +102,16 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { Upload, Folder } from '@element-plus/icons-vue'
+import { UploadFilled, Document, Close, Files, Folder } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { sqlmapApi } from '@/api'
+import { hashcatApi } from '@/api'
 import FilePicker from '@/components/FilePicker.vue'
 
 const props = defineProps({ modelValue: Boolean })
 const emit = defineEmits(['update:modelValue', 'created'])
+
+const submitting = ref(false)
+const paramMeta = ref([])
 
 // 文件路径选择器
 const filePickerVisible = ref(false)
@@ -87,19 +129,13 @@ function onFilePicked(path) {
   }
 }
 
-const submitting = ref(false)
-const paramMeta = ref([])
-
-const defaultForm = () => ({ name: '', targetsText: '' })
+const defaultForm = () => ({
+  name: '', hashFile: '', hashFilename: '', hashSize: 0, wordlist: '',
+})
 const form = reactive(defaultForm())
 const enabled = reactive({})
 const values = reactive({})
 const numValues = reactive({})
-
-const targets = computed(() => {
-  const list = form.targetsText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
-  return [...new Set(list)]
-})
 
 const groupedMeta = computed(() => {
   const map = new Map()
@@ -112,26 +148,22 @@ const groupedMeta = computed(() => {
 
 async function loadParamMeta() {
   try {
-    const res = await sqlmapApi.paramMeta()
+    const res = await hashcatApi.paramMeta()
     paramMeta.value = res.data || []
     for (const p of paramMeta.value) {
       if (p.type === 'bool') {
         enabled[p.key] = !!p.default
       } else if (p.type === 'int') {
-        // 关键运行参数默认启用，便于直接填值
-        const enabledByDefault = ['level', 'risk', 'threads', 'time_sec', 'timeout', 'retries', 'verbose', 'crawl_depth'].includes(p.key)
+        // 核心参数默认启用
+        const enabledByDefault = ['hash_type', 'attack_mode', 'workload_profile'].includes(p.key)
         enabled[p.key] = enabledByDefault
         numValues[p.key] = Number(p.default) || 0
       } else {
-        // 字符串：只有 technique 默认启用
-        const enabledByDefault = ['technique'].includes(p.key)
-        enabled[p.key] = enabledByDefault
+        enabled[p.key] = false
         values[p.key] = p.default !== undefined ? String(p.default) : ''
       }
     }
-  } catch (e) {
-    // 元数据加载失败时不阻塞
-  }
+  } catch (e) {}
 }
 
 watch(() => props.modelValue, (v) => {
@@ -141,23 +173,63 @@ watch(() => props.modelValue, (v) => {
   }
 })
 
-function onUploadFile(file) {
+// ---------- 哈希文件上传 ----------
+function onUploadHash(file) {
   const fd = new FormData()
   fd.append('file', file)
-  sqlmapApi.uploadUrls(fd).then((res) => {
-    const urls = res.data || []
-    if (!urls.length) {
-      ElMessage.warning('文件中未解析到有效 URL')
-      return
+  hashcatApi.uploadHash(fd).then((res) => {
+    const data = res.data || {}
+    if (data.hash_file) {
+      form.hashFile = data.hash_file
+      form.hashFilename = data.filename || file.name
+      form.hashSize = data.size || file.size
+      ElMessage.success(`上传成功：${form.hashFilename}（${data.line_count || 0} 个哈希）`)
     }
-    const existing = form.targetsText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
-    const merged = [...new Set([...existing, ...urls])]
-    form.targetsText = merged.join('\n')
-    ElMessage.success(`已导入 ${urls.length} 个 URL`)
   }).catch(() => {})
   return false
 }
 
+function clearHash() {
+  form.hashFile = ''
+  form.hashFilename = ''
+  form.hashSize = 0
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+// ---------- 已上传哈希文件选择 ----------
+const hashPickerVisible = ref(false)
+const hashesLoading = ref(false)
+const hashes = ref([])
+const pickedHash = ref(null)
+
+watch(hashPickerVisible, async (v) => {
+  if (v) {
+    hashesLoading.value = true
+    try {
+      const res = await hashcatApi.listHashes({ size: 100 })
+      hashes.value = res.items || []
+    } catch (e) {} finally { hashesLoading.value = false }
+  }
+})
+
+function onHashPick(row) { pickedHash.value = row }
+
+function confirmHashPick() {
+  if (!pickedHash.value) return
+  form.hashFile = pickedHash.value.stored_path
+  form.hashFilename = pickedHash.value.filename
+  form.hashSize = pickedHash.value.size || 0
+  hashPickerVisible.value = false
+  ElMessage.success(`已选择：${form.hashFilename}`)
+}
+
+// ---------- 提交 ----------
 function buildOptions() {
   const opts = {}
   for (const p of paramMeta.value) {
@@ -177,16 +249,17 @@ function buildOptions() {
 
 async function onSubmit() {
   if (!form.name.trim()) return ElMessage.warning('请输入任务名称')
-  if (!targets.value.length) return ElMessage.warning('请输入至少一个目标 URL')
+  if (!form.hashFile) return ElMessage.warning('请上传或选择哈希文件')
   submitting.value = true
   try {
-    const res = await sqlmapApi.addTask({
+    const res = await hashcatApi.addTask({
       name: form.name.trim(),
-      targets: targets.value,
+      hash_file: form.hashFile,
+      wordlist: form.wordlist.trim(),
       options: buildOptions(),
     })
     if (res.code === 200) {
-      ElMessage.success('扫描任务已下发')
+      ElMessage.success('恢复任务已下发')
       emit('update:modelValue', false)
       emit('created')
     }
@@ -195,6 +268,17 @@ async function onSubmit() {
 </script>
 
 <style scoped>
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f0f9eb;
+  border-radius: 4px;
+  color: #67c23a;
+  font-size: 13px;
+}
 .param-group {
   margin-bottom: 14px;
   padding: 10px 12px;

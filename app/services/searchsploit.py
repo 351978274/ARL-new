@@ -260,5 +260,5 @@ PARAM_META: list[dict[str, Any]] = [
     # Automation
     {"group": "自动化", "key": "nmap", "flag": "--nmap", "name": "Nmap XML 批量搜索",
      "desc": "检查 Nmap XML 输出中的所有服务版本结果（需先 nmap -sV -oX file.xml）",
-     "type": "str", "default": ""},
+     "type": "str", "default": "", "file": True},
 ]

@@ -30,6 +30,12 @@ EXPORT_FIELD_MAP = {
     "sqlmap_result": "target",
     "aircrack_result": "key",
     "searchsploit_result": "edb_id",
+    "hashcat_result": "hash",
+    "fileleak": "url",
+    "vuln": "target",
+    "poc": "plugin_name",
+    "npoc_service": "target",
+    "nuclei_result": "vuln_url",
 }
 
 

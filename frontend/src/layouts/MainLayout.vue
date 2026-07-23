@@ -7,7 +7,8 @@
         <span v-show="!collapsed">资产灯塔</span>
       </div>
       <el-scrollbar style="height: calc(100vh - 60px)">
-        <el-menu :default-active="$route.path" :collapse="collapsed" router
+        <el-menu :default-active="$route.path" :collapse="collapsed"
+                 @select="goMenu"
                  background-color="#304156" text-color="#bfcbd9" active-text-color="#fff">
           <!-- 任务与资产 -->
           <el-sub-menu index="task-group">
@@ -29,6 +30,7 @@
             <el-menu-item index="/cip">C段</el-menu-item>
             <el-menu-item index="/cert">证书</el-menu-item>
             <el-menu-item index="/service">系统服务</el-menu-item>
+            <el-menu-item index="/npoc_service">系统服务(python)</el-menu-item>
             <el-menu-item index="/vuln">漏洞</el-menu-item>
             <el-menu-item index="/fileleak">文件泄露</el-menu-item>
             <el-menu-item index="/poc">PoC</el-menu-item>
@@ -76,6 +78,8 @@
             <el-menu-item index="/aircrack_result">aircrack 结果</el-menu-item>
             <el-menu-item index="/searchsploit">searchsploit 搜索</el-menu-item>
             <el-menu-item index="/searchsploit_result">searchsploit 结果</el-menu-item>
+            <el-menu-item index="/hashcat">hashcat 恢复</el-menu-item>
+            <el-menu-item index="/hashcat_result">hashcat 结果</el-menu-item>
           </el-sub-menu>
 
           <!-- 系统 -->
@@ -147,7 +151,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { userApi } from '@/api'
 import { useUserStore } from '@/stores/user'
@@ -157,8 +161,35 @@ const LighthouseSvg = {
     <path d="M464 96h96l32 160h-160zM320 416l64-160h256l64 160zm-32 160h448l32 352h-512zM192 928h640v32H192z"/></svg>`,
 }
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const collapsed = ref(false)
+
+// 菜单跳转时按目标菜单所属家族，继承当前 URL 的 task_id / scope_id 作为默认查询条件，
+// 使“从任务结果跳进资产列表后，在各资产菜单间切换仍保持任务ID过滤”。
+//   task 族：domain/site/ip/.../各类 *_result/github_*（任务作用域）
+//   scope 族：asset_domain/asset_ip/asset_site/asset_wih（资产组作用域）
+// 两族不互相串：切到 task 族只带 task_id，切到 scope 族只带 scope_id；
+// 其它菜单（任务/系统/工具操作页）不带 query，保持干净。
+const TASK_MENU_PATHS = new Set([
+  'domain', 'site', 'ip', 'url', 'cip', 'cert', 'service', 'npoc_service',
+  'vuln', 'fileleak', 'poc', 'stat_finger', 'nuclei_result', 'wih',
+  'dirsearch_result', 'hydra_result', 'sqlmap_result', 'aircrack_result',
+  'searchsploit_result', 'hashcat_result',
+  'github_task', 'github_result', 'github_monitor_result',
+])
+const SCOPE_MENU_PATHS = new Set(['asset_domain', 'asset_ip', 'asset_site', 'asset_wih'])
+
+function goMenu(index) {
+  const name = String(index).replace(/^\//, '')
+  const query = {}
+  if (TASK_MENU_PATHS.has(name) && route.query.task_id) {
+    query.task_id = route.query.task_id
+  } else if (SCOPE_MENU_PATHS.has(name) && route.query.scope_id) {
+    query.scope_id = route.query.scope_id
+  }
+  router.push({ path: index, query })
+}
 
 const changePassVisible = ref(false)
 const passLoading = ref(false)

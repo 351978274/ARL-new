@@ -247,7 +247,7 @@ PARAM_META: list[dict[str, Any]] = [
     {"group": "字典设置", "key": "extensions", "flag": "-e", "name": "扩展名",
      "desc": "扩展名列表，逗号分隔（如 php,html,js）", "type": "str", "default": "php,html,js"},
     {"group": "字典设置", "key": "wordlists", "flag": "-w", "name": "自定义字典",
-     "desc": "自定义字典文件路径，多个用逗号分隔", "type": "str", "default": ""},
+     "desc": "自定义字典文件路径，多个用逗号分隔", "type": "str", "default": "", "file": True},
     {"group": "字典设置", "key": "force_extensions", "flag": "-f", "name": "强制扩展",
      "desc": "为字典中每一条都追加扩展名（适用于无 %EXT% 关键字的字典）", "type": "bool", "default": False},
     {"group": "字典设置", "key": "overwrite_extensions", "flag": "-O", "name": "覆盖扩展",

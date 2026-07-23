@@ -17,6 +17,7 @@ const routes = [
       { path: 'cip', name: 'Cip', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'C段', collection: 'cip' } },
       { path: 'cert', name: 'Cert', component: () => import('@/views/asset/GenericList.vue'), meta: { title: '证书', collection: 'cert' } },
       { path: 'service', name: 'Service', component: () => import('@/views/asset/GenericList.vue'), meta: { title: '系统服务', collection: 'service' } },
+      { path: 'npoc_service', name: 'NpocService', component: () => import('@/views/asset/GenericList.vue'), meta: { title: '系统服务(python)', collection: 'npoc_service' } },
       { path: 'vuln', name: 'Vuln', component: () => import('@/views/asset/GenericList.vue'), meta: { title: '漏洞', collection: 'vuln' } },
       { path: 'fileleak', name: 'Fileleak', component: () => import('@/views/asset/GenericList.vue'), meta: { title: '文件泄露', collection: 'fileleak' } },
       { path: 'poc', name: 'Poc', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'PoC', collection: 'poc' } },
@@ -50,6 +51,8 @@ const routes = [
       { path: 'aircrack_result', name: 'AircrackResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'aircrack 结果', collection: 'aircrack_result' } },
       { path: 'searchsploit', name: 'Searchsploit', component: () => import('@/views/tools/Searchsploit.vue'), meta: { title: 'searchsploit 搜索' } },
       { path: 'searchsploit_result', name: 'SearchsploitResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'searchsploit 结果', collection: 'searchsploit_result' } },
+      { path: 'hashcat', name: 'Hashcat', component: () => import('@/views/tools/Hashcat.vue'), meta: { title: 'hashcat 恢复' } },
+      { path: 'hashcat_result', name: 'HashcatResult', component: () => import('@/views/asset/GenericList.vue'), meta: { title: 'hashcat 结果', collection: 'hashcat_result' } },
 
       // 系统配置
       { path: 'policy', name: 'Policy', component: () => import('@/views/system/Policy.vue'), meta: { title: '策略管理' } },

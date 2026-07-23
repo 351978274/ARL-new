@@ -39,12 +39,14 @@ class InfoHunter:
                     logger.warning(f"清理 wih 临时文件失败 {p}: {e}")
 
     async def exec_wih(self):
-        command = [self.wih_bin_path, f"-r {Config.WIH_RULE_PATH}", "-J",
-                   f"-o {self.wih_result_path}", "--concurrency 3", "--log-level zero",
-                   "--concurrency-per-site 1", "--disable-ak-sk-output",
-                   f"-t {self.wih_target_path}"]
+        # 注意：exec_system 走 subprocess.run(list) 不做 shell 分词，
+        # flag 与值必须拆成独立的 argv 元素，否则 wih 报 unknown flag 且不产出结果。
+        command = [self.wih_bin_path, "-r", Config.WIH_RULE_PATH, "-J",
+                   "-o", self.wih_result_path, "--concurrency", "3",
+                   "--log-level", "zero", "--concurrency-per-site", "1",
+                   "--disable-ak-sk-output", "-t", self.wih_target_path]
         if Config.PROXY_URL:
-            command.append(f"--proxy {Config.PROXY_URL}")
+            command.extend(["--proxy", Config.PROXY_URL])
         logger.info(" ".join(command))
         await exec_system(command, timeout=5 * 24 * 60 * 60)
 

@@ -293,6 +293,18 @@ export const COLLECTION_CONFIG = {
       { prop: 'save_date', label: '发现时间', width: 160 },
     ],
   },
+  hashcat_result: {
+    title: 'hashcat 破解结果',
+    columns: [
+      {
+        prop: 'cracked', label: '破解', width: 80,
+        render: (row) => row.cracked ? '是' : '否',
+      },
+      { prop: 'hash', label: '哈希', minWidth: 320, copyable: true },
+      { prop: 'plain', label: '明文', minWidth: 180, copyable: true },
+      { prop: 'save_date', label: '发现时间', width: 160 },
+    ],
+  },
   task_schedule: {
     title: '计划任务',
     columns: [

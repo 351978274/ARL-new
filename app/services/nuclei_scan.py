@@ -82,10 +82,12 @@ class NucleiScan:
 
     async def exec_nuclei(self):
         self._gen_target_file()
-        command = [self.nuclei_bin_path, "-duc", "-tags cve",
-                   "-severity low,medium,high,critical", "-type http",
-                   f"-l {self.nuclei_target_path}", self.nuclei_json_flag,
-                   "-stats", "-stats-interval 60", f"-o {self.nuclei_result_path}"]
+        # 注意：exec_system 走 subprocess.run(list) 不做 shell 分词，
+        # flag 与值必须拆成独立的 argv 元素，否则 nuclei 报 unknown flag 且不产出结果。
+        command = [self.nuclei_bin_path, "-duc", "-tags", "cve",
+                   "-severity", "low,medium,high,critical", "-type", "http",
+                   "-l", self.nuclei_target_path, self.nuclei_json_flag,
+                   "-stats", "-stats-interval", "60", "-o", self.nuclei_result_path]
         logger.info(" ".join(command))
         await exec_system(command, timeout=96 * 60 * 60)
 

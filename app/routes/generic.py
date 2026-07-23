@@ -61,4 +61,5 @@ routers: list[APIRouter] = [
     make_readonly_router("sqlmap_result", "sqlmap_result", "sqlmap结果"),
     make_readonly_router("aircrack_result", "aircrack_result", "aircrack结果"),
     make_readonly_router("searchsploit_result", "searchsploit_result", "searchsploit结果"),
+    make_readonly_router("hashcat_result", "hashcat_result", "hashcat结果"),
 ]
