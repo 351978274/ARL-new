@@ -119,10 +119,10 @@ async def http_req(url: str, method: str = 'get', **kwargs) -> HttpResponse:
 
     client_kwargs, read_timeout = _build_client_kwargs(verify, raw_timeout, allow_redirects, headers)
 
-    method_lower = method.lower()
     async with httpx.AsyncClient(**client_kwargs) as client:
-        request_method = getattr(client, method_lower, client.get)
-        async with request_method(url, **kwargs) as response:
+        # client.get/post/... 返回的是 coroutine，无法直接用作 async context manager；
+        # 流式读取必须使用 client.stream(...)，它才是 async context manager。
+        async with client.stream(method, url, **kwargs) as response:
             content = await _stream_read(response, read_timeout)
             return HttpResponse(response, content)
 

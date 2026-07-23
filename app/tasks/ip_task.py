@@ -10,7 +10,8 @@ from ..config import Config
 from ..database import conn_db
 from ..logger import get_logger
 from ..modules import ScanPortType, TaskStatus, load_port_list
-from ..services import (fetch_cert as fetchCert, run_risk_cruising, run_sniffer)
+from ..services import (run_risk_cruising, run_sniffer)
+from ..services.fetch_cert import SSLCert
 from ..services.base_update_task import BaseUpdateTask
 from ..services.common_task import CommonTask, WebSiteFetch
 from ..utils import curr_date, get_ip_asn, get_ip_city, get_ip_country, get_ip_type, not_in_black_ips
@@ -26,7 +27,7 @@ async def ssl_cert(ip_info_list: list[dict]) -> dict:
                 if port_info["port_id"] == 80:
                     continue
                 targets.append(f"{ip_info['ip']}:{port_info['port_id']}")
-        f = fetchCert.SSLCert(targets)
+        f = SSLCert(targets)
         return await f.run()
     except Exception as e:
         logger.exception(e)
